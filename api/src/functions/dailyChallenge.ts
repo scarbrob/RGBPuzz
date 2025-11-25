@@ -4,6 +4,8 @@ import { generateDailySeed, generateColorsFromSeed, createColorToken, encryptHex
 /**
  * GET /api/daily-challenge
  * Returns the daily challenge with hashed color tokens
+ * Note: Database storage disabled due to Azure SDK dependency issues
+ * The deterministic generation ensures everyone gets the same challenge each day
  */
 export async function getDailyChallenge(
   request: HttpRequest,

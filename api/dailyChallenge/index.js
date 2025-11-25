@@ -1,9 +1,20 @@
 const path = require('path');
-const { getDailyChallenge } = require(path.join(__dirname, '..', 'dist', 'functions', 'dailyChallenge'));
 
 module.exports = async function (context, req) {
     try {
-        const response = await getDailyChallenge(req, context);
+        // Create mock HttpRequest object for v4 function signature
+        const mockRequest = {
+            json: async () => req.body,
+            text: async () => JSON.stringify(req.body),
+            body: req.body,
+            query: {
+                get: (key) => req.query[key] || null
+            },
+            params: req.params
+        };
+        
+        const { getDailyChallenge } = require(path.join(__dirname, '..', 'dist', 'functions', 'dailyChallenge'));
+        const response = await getDailyChallenge(mockRequest, context);
         context.res = {
             status: response.status || 200,
             headers: response.headers || {},

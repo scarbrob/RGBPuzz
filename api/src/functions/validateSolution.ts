@@ -1,41 +1,77 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { generateDailySeed, generateColorsFromSeed, createColorToken, rgbToValue } from '../utils/colorGenerator';
+import { generateDailySeed, generateColorsFromSeed, generateLevelColors, createColorToken, rgbToValue } from '../utils/colorGenerator';
 
 interface ValidationRequest {
-  date: string;
+  date?: string;
+  mode?: 'daily' | 'level';
+  difficulty?: 'easy' | 'medium' | 'hard' | 'insane';
+  level?: number;
   orderedTokenIds: string[];
 }
 
 /**
  * POST /api/validate-solution
  * Validates the user's color ordering without exposing RGB values
+ * Supports both daily challenge and level modes
  */
 export async function validateSolution(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
-    const body = await request.json() as ValidationRequest;
-    const { date, orderedTokenIds } = body;
+    context.log('Validate solution called');
     
-    if (!date || !orderedTokenIds || !Array.isArray(orderedTokenIds)) {
+    let body: ValidationRequest;
+    try {
+      body = await request.json() as ValidationRequest;
+      context.log('Request body:', JSON.stringify(body));
+    } catch (parseError) {
+      context.error('JSON parse error:', parseError);
       return {
         status: 400,
-        jsonBody: { error: 'Invalid request body' },
+        jsonBody: { error: 'Invalid JSON in request body' },
+      };
+    }
+    
+    const { orderedTokenIds, mode = 'daily', difficulty, level } = body;
+    
+    if (!orderedTokenIds || !Array.isArray(orderedTokenIds)) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Invalid request body: orderedTokenIds required' },
       };
     }
     
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
-    const colorCount = 5;
+    let colors;
     
-    // Regenerate the same colors from the seed
-    const seed = generateDailySeed(date, salt);
-    const colors = generateColorsFromSeed(seed, colorCount);
+    // Generate colors based on mode
+    if (mode === 'level') {
+      if (!difficulty || !level) {
+        return {
+          status: 400,
+          jsonBody: { error: 'Difficulty and level required for level mode' },
+        };
+      }
+      
+      context.log(`Validating level: ${difficulty} ${level}`);
+      colors = generateLevelColors(difficulty, level);
+    } else {
+      // Daily challenge mode
+      const queryDate = request.query.get('date');
+      const date = body.date || queryDate || new Date().toISOString().split('T')[0];
+      context.log('Validating solution for date:', date);
+      
+      const colorCount = 5;
+      const seed = generateDailySeed(date, salt);
+      colors = generateColorsFromSeed(seed, colorCount);
+    }
     
     // Create mapping of hash IDs to colors
     const hashToIndex = new Map();
     colors.forEach((color, index) => {
-      const hash = createColorToken(color, index, salt);
+      const saltSuffix = mode === 'level' ? `${difficulty}${level}` : '';
+      const hash = createColorToken(color, index, salt + saltSuffix);
       hashToIndex.set(hash, index);
     });
     

@@ -1,9 +1,18 @@
 const path = require('path');
-const { getUserStats } = require(path.join(__dirname, '..', 'dist', 'functions', 'userStats'));
 
 module.exports = async function (context, req) {
     try {
-        const response = await getUserStats(req, context);
+        // Create mock HttpRequest object for v4 function signature
+        const mockRequest = {
+            json: async () => req.body,
+            text: async () => JSON.stringify(req.body),
+            body: req.body,
+            query: req.query,
+            params: req.params
+        };
+        
+        const { getUserStats } = require(path.join(__dirname, '..', 'dist', 'functions', 'userStats'));
+        const response = await getUserStats(mockRequest, context);
         context.res = {
             status: response.status || 200,
             headers: response.headers || {},

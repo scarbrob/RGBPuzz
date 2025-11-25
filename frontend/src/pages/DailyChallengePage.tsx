@@ -9,7 +9,9 @@ export default function DailyChallengePage() {
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
   const [feedback, setFeedback] = useState<string>('')
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
+  const [incorrectPositions, setIncorrectPositions] = useState<number[]>([])
   const [showHint, setShowHint] = useState(false)
+  const [challengeDate, setChallengeDate] = useState<string>('')
   const [attemptHistory, setAttemptHistory] = useState<Array<{
     colors: Array<{ id: string; hex: string }>;
     correctPositions: number[];
@@ -55,6 +57,7 @@ export default function DailyChallengePage() {
         setGameState(parsed.gameState);
         setFeedback(parsed.feedback);
         setAttemptHistory(parsed.attemptHistory || []);
+        setChallengeDate(parsed.challengeDate || today);
         if (parsed.gameState !== 'playing') {
           setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
         }
@@ -62,7 +65,7 @@ export default function DailyChallengePage() {
       }
       
       try {
-        const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/daily-challenge');
+        const response = await fetch(`https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/daily-challenge?date=${today}`);
         if (!response.ok) throw new Error('Failed to fetch challenge');
         const data = await response.json();
         
@@ -74,6 +77,7 @@ export default function DailyChallengePage() {
         
         setColors(decryptedColors);
         setMaxAttempts(data.maxAttempts);
+        setChallengeDate(data.date);
       } catch (error) {
         console.error('Error fetching daily challenge:', error);
         // Fallback to mock data
@@ -102,7 +106,8 @@ export default function DailyChallengePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          date: new Date().toISOString().split('T')[0],
+          mode: 'daily',
+          date: challengeDate,
           orderedTokenIds: currentOrder,
         }),
       });
@@ -116,6 +121,7 @@ export default function DailyChallengePage() {
       const incorrect = currentOrder.map((_, idx) => idx).filter(idx => !correct.includes(idx));
       
       setCorrectPositions(correct);
+      setIncorrectPositions(incorrect);
       
       // Save to history
       const newHistory = [...attemptHistory, {
@@ -151,7 +157,8 @@ export default function DailyChallengePage() {
         maxAttempts,
         gameState: newGameState,
         feedback: newFeedback,
-        attemptHistory: newHistory
+        attemptHistory: newHistory,
+        challengeDate
       }));
     } catch (error) {
       console.error('Error validating solution:', error);
@@ -160,23 +167,23 @@ export default function DailyChallengePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <h1 className="text-4xl font-bold text-game-primary">
+    <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="text-center mb-10 mt-8">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent pb-2">
             Daily Challenge
           </h1>
           {process.env.NODE_ENV === 'development' && (
             <button
               onClick={resetPuzzle}
-              className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+              className="text-xs px-3 py-1 bg-light-border dark:bg-dark-border hover:bg-light-accent dark:hover:bg-dark-accent text-light-text-primary dark:text-dark-text-primary rounded-lg transition-all"
               title="Reset puzzle (dev only)"
             >
               🔄 Reset
             </button>
           )}
         </div>
-        <p className="text-gray-400">
+        <p className="text-light-text-secondary dark:text-dark-text-secondary text-lg leading-tight">
           {new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -186,45 +193,46 @@ export default function DailyChallengePage() {
         </p>
       </div>
 
-      <div className="game-card mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <span className="text-gray-400">Attempts:</span>
-            <span className="text-white font-bold ml-2">{attempts} / {maxAttempts}</span>
+      <div className="mb-8 animate-slide-in">
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-lg">
+            <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
+            <span className="font-bold ml-2 text-2xl text-light-accent dark:text-dark-accent">{attempts}</span>
+            <span className="text-light-text-secondary dark:text-dark-text-secondary"> / {maxAttempts}</span>
           </div>
-          <div className="text-gray-400">
-            Order colors from lowest to highest value
+          <div className="text-light-text-secondary dark:text-dark-text-secondary text-sm font-medium">
+            Order colors from <span className="text-light-accent dark:text-dark-accent">darkest</span> to <span className="text-light-accent dark:text-dark-accent">lightest</span>.
           </div>
         </div>
 
         {/* Color Spectrum Hint */}
-        <div className="mb-6">
+        <div className="mb-8">
           <button
             onClick={() => setShowHint(!showHint)}
-            className="w-full text-center text-sm text-gray-400 hover:text-gray-300 mb-2 transition-colors"
+            className="w-full text-center text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-accent dark:hover:text-dark-accent mb-3 transition-colors font-medium"
           >
             💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
           </button>
           {showHint && (
-            <div className="relative h-8 rounded-lg overflow-hidden shadow-lg animate-in fade-in duration-200">
+            <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
               <div 
                 className="absolute inset-0"
                 style={{
                   background: 'linear-gradient(to right, #000000, #0000ff, #00ff00, #00ffff, #ff0000, #ff00ff, #ffff00, #ffffff)'
                 }}
               />
-              <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-bold text-white" style={{ textShadow: '0 0 3px black, 0 0 3px black' }}>
-                <span>Lowest</span>
-                <span>Highest</span>
+              <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
+                <span>Darkest</span>
+                <span>Lightest</span>
               </div>
             </div>
           )}
         </div>
 
         {feedback && gameState !== 'playing' && (
-          <div className={`mb-4 p-3 rounded-lg text-center ${
-            gameState === 'won' ? 'bg-green-500/20 text-green-300' :
-            'bg-red-500/20 text-red-300'
+          <div className={`mb-6 p-4 rounded-xl text-center font-medium animate-slide-in ${
+            gameState === 'won' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/50' :
+            'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/50'
           }`}>
             {feedback}
           </div>
@@ -233,37 +241,63 @@ export default function DailyChallengePage() {
         <ColorBoard 
           colors={colors}
           correctPositions={correctPositions}
-          incorrectPositions={attemptHistory.length > 0 ? attemptHistory[attemptHistory.length - 1].incorrectPositions : []}
+          incorrectPositions={incorrectPositions}
           locked={gameState !== 'playing'}
           onOrderChange={(newOrder) => {
             if (gameState !== 'playing') return;
             const reordered = newOrder.map(id => colors.find(c => c.id === id)!);
             setColors(reordered);
             setCorrectPositions([]); // Clear highlights when user reorders
+            setIncorrectPositions([]); // Clear incorrect markers too
           }}
         />
 
-        <div className="mt-6">
+        <div className="mt-8 flex justify-center">
           <button 
-            className="game-button disabled:opacity-50 disabled:cursor-not-allowed"
+            className="game-button w-full max-w-md text-lg py-4"
             onClick={handleSubmit}
             disabled={gameState !== 'playing'}
           >
-            {gameState === 'playing' ? 'Submit Answer' : 
-             gameState === 'won' ? 'Solved! ✓' : 'Failed ✗'}
+            {gameState === 'won' ? 'Solved! ✓' : 'Submit Answer'}
           </button>
         </div>
       </div>
 
+      {gameState !== 'playing' && (
+        <div className="mt-12 animate-slide-in">
+          <h3 className="text-xl font-bold mb-4 text-center text-light-text-primary dark:text-dark-text-primary">Share Your Result</h3>
+          <div className="flex justify-center mb-4">
+            <button 
+              className="game-button"
+              onClick={copyResults}
+            >
+              📋 Copy Result
+            </button>
+          </div>
+          <div className="mt-4 p-4 bg-light-surface/50 dark:bg-dark-surface/30 rounded-xl text-sm font-mono text-light-text-secondary dark:text-dark-text-secondary whitespace-pre-line text-center">
+            RGBPuzz {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
+            {attempts}/{maxAttempts}<br/>
+            <br/>
+            {attemptHistory.map((attempt, idx) => (
+              <div key={idx}>
+                {attempt.colors.map((_, colorIdx) => 
+                  attempt.correctPositions.includes(colorIdx) ? '✅' : '❌'
+                ).join('')}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {attemptHistory.length > 0 && (
-        <div className="game-card mb-6">
-          <h3 className="text-xl font-bold mb-4">Previous Attempts</h3>
-          <div className="space-y-3">
+        <div className="animate-slide-in mt-12">
+          <h3 className="text-2xl font-bold mb-6 text-light-text-primary dark:text-dark-text-primary">Previous Attempts</h3>
+          <div className="space-y-4">
             {[...attemptHistory].reverse().map((attempt, reverseIndex) => {
               const attemptIndex = attemptHistory.length - 1 - reverseIndex;
               return (
-                <div key={attemptIndex} className="border border-gray-700 rounded-lg p-3">
-                  <div className="text-sm text-gray-400 mb-2">Attempt {attemptIndex + 1}</div>
+                <div key={attemptIndex} className="rounded-xl p-4 bg-light-surface/50 dark:bg-dark-surface/30">
+                  <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-3 font-medium">Attempt {attemptIndex + 1}</div>
                   <div className="flex gap-2 justify-center flex-wrap">
                     {attempt.colors.map((color, colorIndex) => (
                       <div
@@ -288,30 +322,6 @@ export default function DailyChallengePage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {gameState !== 'playing' && (
-        <div className="game-card">
-          <h3 className="text-xl font-bold mb-3">Share Your Result</h3>
-          <button 
-            className="game-button"
-            onClick={copyResults}
-          >
-            📋 Copy Result
-          </button>
-          <div className="mt-4 p-3 bg-gray-800 rounded text-sm font-mono text-gray-300 whitespace-pre-line">
-            RGBPuzz {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
-            {attempts}/{maxAttempts}<br/>
-            <br/>
-            {attemptHistory.map((attempt, idx) => (
-              <div key={idx}>
-                {attempt.colors.map((_, colorIdx) => 
-                  attempt.correctPositions.includes(colorIdx) ? '✅' : '❌'
-                ).join('')}
-              </div>
-            ))}
           </div>
         </div>
       )}

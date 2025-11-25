@@ -8,9 +8,10 @@ interface ColorTileProps {
   isCorrect?: boolean
   isIncorrect?: boolean
   locked?: boolean
+  size?: number
 }
 
-export default function ColorTile({ id, color, index, isCorrect = false, isIncorrect = false, locked = false }: ColorTileProps) {
+export default function ColorTile({ id, color, index, isCorrect = false, isIncorrect = false, locked = false, size }: ColorTileProps) {
   const {
     attributes,
     listeners,
@@ -26,6 +27,8 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
     transform: CSS.Transform.toString(transform),
     transition: 'none', // No transitions for instant movement
     backgroundColor: color,
+    width: size ? `${size}px` : undefined,
+    height: size ? `${size}px` : undefined,
   }
 
   return (
@@ -35,19 +38,19 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
       {...attributes}
       {...listeners}
       className={`color-tile relative group ${
-        isCorrect ? 'ring-4 ring-green-400 ring-offset-2 ring-offset-gray-900' : 
-        isIncorrect ? 'ring-4 ring-red-400 ring-offset-2 ring-offset-gray-900' : ''
+        isCorrect ? 'ring-2 sm:ring-4 ring-green-400 ring-offset-1 ring-offset-gray-900' : 
+        isIncorrect ? 'ring-2 sm:ring-4 ring-red-400 ring-offset-1 ring-offset-gray-900' : ''
       } ${isDragging ? 'opacity-50 scale-110 z-50' : 'opacity-100'} ${
         !locked ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
       }`}
     >
       {isCorrect && (
-        <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg pointer-events-none">
+        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-green-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none">
           ✓
         </div>
       )}
       {isIncorrect && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg pointer-events-none">
+        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none">
           ✗
         </div>
       )}

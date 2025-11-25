@@ -1,51 +1,65 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { generateRandomColors, createColorToken } from '../utils/colorGenerator';
+import { generateLevelColors, createColorToken, deterministicShuffle, encryptHex } from '../utils/colorGenerator';
 
 /**
- * GET /api/level/{levelId}
+ * GET /api/level?difficulty={difficulty}&level={level}
  * Returns a specific level challenge
+ * Difficulty: easy (3 colors), medium (5), hard (7), insane (9)
+ * Level: 1-100 for each difficulty
  */
 export async function getLevel(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
-    const levelId = request.params.levelId;
+    const difficulty = request.query.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
+    const levelStr = request.query.get('level');
     
-    if (!levelId) {
+    if (!difficulty || !levelStr) {
       return {
         status: 400,
-        jsonBody: { error: 'Level ID required' },
+        jsonBody: { error: 'Difficulty and level required' },
       };
     }
     
-    // TODO: Fetch level configuration from database
-    // For now, generate based on level ID
-    const levelNum = parseInt(levelId);
-    const difficulty = levelNum <= 3 ? 'easy' : levelNum <= 10 ? 'medium' : 'hard';
-    const colorCount = levelNum <= 3 ? 3 : levelNum <= 10 ? 5 : 7;
-    const theme = levelNum % 3 === 0 ? 'reds' : levelNum % 3 === 1 ? 'blues' : 'greens';
+    const level = parseInt(levelStr);
+    
+    if (!['easy', 'medium', 'hard', 'insane'].includes(difficulty)) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Invalid difficulty. Must be easy, medium, hard, or insane' },
+      };
+    }
+    
+    if (level < 1 || level > 100) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Level must be between 1 and 100' },
+      };
+    }
     
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
-    const colors = generateRandomColors(colorCount, theme);
+    const colors = generateLevelColors(difficulty, level);
     
-    const colorTokens = colors.map((color, index) => ({
-      id: `level-${levelId}-color-${index}`,
-      hash: createColorToken(color, index, salt + levelId),
-      hex: `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`,
-    }));
+    const colorTokens = colors.map((color, index) => {
+      const hash = createColorToken(color, index, salt + difficulty + level);
+      const hex = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
+      return {
+        id: hash,
+        encrypted: encryptHex(hex, hash),
+      };
+    });
     
-    const shuffled = [...colorTokens].sort(() => Math.random() - 0.5);
+    // Deterministic shuffle based on difficulty and level
+    const shuffled = deterministicShuffle(colorTokens, `${difficulty}-${level}`);
     
     return {
       status: 200,
       jsonBody: {
-        levelId,
         difficulty,
-        colorCount,
-        theme,
+        level,
+        colorCount: colors.length,
         colorTokens: shuffled,
-        maxAttempts: colorCount,
       },
     };
   } catch (error) {

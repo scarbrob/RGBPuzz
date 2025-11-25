@@ -26,15 +26,54 @@ interface ColorBoardProps {
 
 export default function ColorBoard({ colors, correctPositions = [], incorrectPositions = [], locked = false, onOrderChange }: ColorBoardProps) {
   const [items, setItems] = useState(colors)
+  const [tileSize, setTileSize] = useState(96) // Default size in pixels
 
   useEffect(() => {
     setItems(colors)
   }, [colors])
 
+  useEffect(() => {
+    const calculateTileSize = () => {
+      const numColors = colors.length
+      const screenWidth = window.innerWidth
+      
+      // Account for padding and gaps
+      const padding = screenWidth < 640 ? 32 : 48 // px-4 sm:px-6 = 16px or 24px per side
+      const gapSize = screenWidth < 640 ? 8 : screenWidth < 768 ? 8 : screenWidth < 1024 ? 12 : 16
+      const totalGaps = (numColors - 1) * gapSize
+      const availableWidth = screenWidth - padding - totalGaps
+      
+      // Calculate max tile size that fits
+      let calculatedSize = Math.floor(availableWidth / numColors)
+      
+      // Set responsive max sizes based on breakpoint
+      let maxSize = 96 // lg default
+      if (screenWidth < 640) {
+        maxSize = 40 // mobile
+      } else if (screenWidth < 768) {
+        maxSize = 64 // sm
+      } else if (screenWidth < 1024) {
+        maxSize = 80 // md
+      }
+      
+      // Use smaller of calculated or max
+      calculatedSize = Math.min(calculatedSize, maxSize)
+      
+      // Ensure minimum size
+      calculatedSize = Math.max(calculatedSize, 32)
+      
+      setTileSize(calculatedSize)
+    }
+
+    calculateTileSize()
+    window.addEventListener('resize', calculateTileSize)
+    return () => window.removeEventListener('resize', calculateTileSize)
+  }, [colors.length])
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Minimal movement before drag starts
+        distance: 5, // Small movement to start drag
       },
     }),
     useSensor(KeyboardSensor, {
@@ -63,7 +102,7 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
   }
 
   return (
-    <div className="flex justify-center items-center py-8">
+    <div className="flex justify-center items-center py-8 w-full">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -73,7 +112,7 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
           items={items.map(item => item.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="flex gap-4 flex-wrap justify-center">
+          <div className="flex gap-2 sm:gap-2 md:gap-3 lg:gap-4 justify-center w-full px-4 sm:px-6">
             {items.map((item, index) => (
               <ColorTile
                 key={item.id}
@@ -83,6 +122,7 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
                 isCorrect={correctPositions.includes(index)}
                 isIncorrect={incorrectPositions.includes(index)}
                 locked={locked}
+                size={tileSize}
               />
             ))}
           </div>

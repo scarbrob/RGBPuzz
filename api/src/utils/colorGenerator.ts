@@ -28,10 +28,11 @@ export function generateColorsFromSeed(seed: string, count: number): RGBColor[] 
       .update(Buffer.from([i]))
       .digest();
     
+    // Shift values away from 0-9 (too dark) and 246-255 (too light)
     colors.push({
-      r: hash[0],
-      g: hash[1],
-      b: hash[2],
+      r: 10 + (hash[0] % 236),
+      g: 10 + (hash[1] % 236),
+      b: 10 + (hash[2] % 236),
     });
   }
   
@@ -103,6 +104,50 @@ export function generateRandomColors(count: number, theme?: 'reds' | 'greens' | 
     const b = theme === 'blues' ? 150 + Math.floor(Math.random() * 105) : Math.floor(Math.random() * 256);
     
     colors.push({ r, g, b });
+  }
+  
+  return colors;
+}
+
+/**
+ * Generate evenly spaced colors for level mode
+ * @param difficulty - 'easy' (3 colors), 'medium' (5), 'hard' (7), 'insane' (9)
+ * @param level - Level number from 1-100, determines spacing between colors
+ */
+export function generateLevelColors(difficulty: 'easy' | 'medium' | 'hard' | 'insane', level: number): RGBColor[] {
+  const colorCounts = {
+    easy: 3,
+    medium: 5,
+    hard: 7,
+    insane: 9
+  };
+  
+  const count = colorCounts[difficulty];
+  
+  // Calculate the range based on level (1-100)
+  // Level 1: max spacing, Level 100: min spacing
+  // Start with full RGB range (0-16777215) and narrow down to minimum spacing
+  const minSpacingPerColor = 1000; // Minimum RGB value difference at level 100
+  const maxRange = 16777215; // Max RGB value (255 * 65536 + 255 * 256 + 255)
+  const minRange = minSpacingPerColor * (count - 1);
+  
+  // Linear interpolation from max to min range based on level
+  const range = maxRange - ((maxRange - minRange) * ((level - 1) / 99));
+  const spacing = range / (count - 1);
+  
+  // Use level as seed for deterministic start position
+  const seed = createHash('md5').update(`level-${difficulty}-${level}`).digest();
+  const startValue = (seed[0] * 256 + seed[1]) % (maxRange - range);
+  
+  const colors: RGBColor[] = [];
+  for (let i = 0; i < count; i++) {
+    const rgbValue = Math.floor(startValue + (spacing * i));
+    // Shift values to 10-245 range to avoid background colors
+    colors.push({
+      r: 10 + (Math.floor(rgbValue / 65536) % 236),
+      g: 10 + (Math.floor(rgbValue / 256) % 236),
+      b: 10 + (rgbValue % 236)
+    });
   }
   
   return colors;

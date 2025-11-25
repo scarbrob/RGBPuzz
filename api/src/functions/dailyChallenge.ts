@@ -2,8 +2,9 @@ import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functio
 import { generateDailySeed, generateColorsFromSeed, createColorToken, encryptHex, deterministicShuffle } from '../utils/colorGenerator';
 
 /**
- * GET /api/daily-challenge
+ * GET /api/daily-challenge?date=YYYY-MM-DD
  * Returns the daily challenge with hashed color tokens
+ * If no date is provided, uses the server's current date (UTC)
  * Note: Database storage disabled due to Azure SDK dependency issues
  * The deterministic generation ensures everyone gets the same challenge each day
  */
@@ -12,7 +13,12 @@ export async function getDailyChallenge(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // Get date from query param or use server's current date
+    const queryDate = request.query.get('date');
+    const today = queryDate || new Date().toISOString().split('T')[0];
+    
+    context.log('Generating challenge for date:', today);
+    
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
     const colorCount = 5; // Can be made configurable
     

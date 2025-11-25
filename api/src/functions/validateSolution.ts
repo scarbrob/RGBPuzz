@@ -1,4 +1,4 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateDailySeed, generateColorsFromSeed, createColorToken, rgbToValue } from '../utils/colorGenerator';
 
 interface ValidationRequest {
@@ -70,10 +70,3 @@ export async function validateSolution(
     };
   }
 }
-
-app.http('validateSolution', {
-  methods: ['POST'],
-  authLevel: 'anonymous',
-  route: 'validate-solution',
-  handler: validateSolution,
-});

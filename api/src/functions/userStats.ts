@@ -1,4 +1,4 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 
 /**
  * GET /api/user/stats
@@ -35,10 +35,3 @@ export async function getUserStats(
     };
   }
 }
-
-app.http('userStats', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'user/stats',
-  handler: getUserStats,
-});

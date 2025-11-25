@@ -1,4 +1,4 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateDailySeed, generateColorsFromSeed, createColorToken } from '../utils/colorGenerator';
 
 /**
@@ -44,10 +44,3 @@ export async function getDailyChallenge(
     };
   }
 }
-
-app.http('dailyChallenge', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'daily-challenge',
-  handler: getDailyChallenge,
-});

@@ -1,0 +1,19 @@
+# Exclude TypeScript source files
+src/
+*.ts
+!src/**/*.d.ts
+tsconfig.json
+
+# Exclude development files
+.git*
+.vscode/
+local.settings.json
+test/
+*.md
+
+# Exclude build artifacts
+*.log
+.DS_Store
+
+# Note: node_modules is intentionally NOT excluded
+# Azure Functions needs dependencies deployed with the app

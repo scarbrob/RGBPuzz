@@ -1,4 +1,4 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateRandomColors, createColorToken } from '../utils/colorGenerator';
 
 /**
@@ -56,10 +56,3 @@ export async function getLevel(
     };
   }
 }
-
-app.http('getLevel', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'level/{levelId}',
-  handler: getLevel,
-});

@@ -49,10 +49,46 @@ export function createColorToken(color: RGBColor, index: number, salt: string): 
 }
 
 /**
+ * Encrypt hex color using XOR cipher with a key derived from the token
+ * Returns base64 encoded encrypted value
+ */
+export function encryptHex(hex: string, token: string): string {
+  // Create a key from the token
+  const key = createHash('md5').update(token).digest();
+  const hexBytes = Buffer.from(hex.replace('#', ''), 'hex');
+  
+  // XOR each byte with the key
+  const encrypted = Buffer.alloc(hexBytes.length);
+  for (let i = 0; i < hexBytes.length; i++) {
+    encrypted[i] = hexBytes[i] ^ key[i % key.length];
+  }
+  
+  return encrypted.toString('base64');
+}
+
+/**
  * Sort colors by RGB value
  */
 export function rgbToValue(color: RGBColor): number {
   return color.r * 65536 + color.g * 256 + color.b;
+}
+
+/**
+ * Deterministic shuffle using a seed
+ */
+export function deterministicShuffle<T>(array: T[], seed: string): T[] {
+  const shuffled = [...array];
+  const seedHash = createHash('sha256').update(seed).digest();
+  
+  // Fisher-Yates shuffle with deterministic random values from seed
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Use hash bytes to generate deterministic "random" index
+    const randomByte = seedHash[i % seedHash.length];
+    const j = Math.floor((randomByte / 255) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  return shuffled;
 }
 
 /**

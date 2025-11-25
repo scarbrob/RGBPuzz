@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ColorBoard from '../components/ColorBoard'
+import { decryptHex } from '../../../shared/src/crypto'
 
 export default function DailyChallengePage() {
   const [colors, setColors] = useState<Array<{ id: string; hex: string }>>([])
@@ -61,10 +62,17 @@ export default function DailyChallengePage() {
       }
       
       try {
-        const response = await fetch('http://localhost:7071/api/daily-challenge');
+        const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/daily-challenge');
         if (!response.ok) throw new Error('Failed to fetch challenge');
         const data = await response.json();
-        setColors(data.colorTokens);
+        
+        // Decrypt the hex values from encrypted tokens
+        const decryptedColors = data.colorTokens.map((token: { id: string; encrypted: string }) => ({
+          id: token.id,
+          hex: decryptHex(token.encrypted, token.id)
+        }));
+        
+        setColors(decryptedColors);
         setMaxAttempts(data.maxAttempts);
       } catch (error) {
         console.error('Error fetching daily challenge:', error);
@@ -90,7 +98,7 @@ export default function DailyChallengePage() {
     const currentOrder = colors.map(c => c.id);
     
     try {
-      const response = await fetch('http://localhost:7071/api/validate-solution', {
+      const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

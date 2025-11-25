@@ -1,5 +1,5 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { generateDailySeed, generateColorsFromSeed, createColorToken } from '../utils/colorGenerator';
+import { generateDailySeed, generateColorsFromSeed, createColorToken, encryptHex, deterministicShuffle } from '../utils/colorGenerator';
 
 /**
  * GET /api/daily-challenge
@@ -18,21 +18,29 @@ export async function getDailyChallenge(
     const seed = generateDailySeed(today, salt);
     const colors = generateColorsFromSeed(seed, colorCount);
     
-    // Create tokens (hide RGB values from client)
-    const colorTokens = colors.map((color, index) => ({
-      id: `color-${index}`,
-      hash: createColorToken(color, index, salt),
-      hex: `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`,
-    }));
+    // Create tokens with encrypted hex values
+    // The hex is encrypted using the token as the key, so it can only be
+    // decrypted client-side with the matching token
+    const colorTokens = colors.map((color, index) => {
+      const hash = createColorToken(color, index, salt);
+      const hex = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
+      const encryptedHex = encryptHex(hex, hash);
+      
+      return {
+        id: hash,
+        encrypted: encryptedHex,
+      };
+    });
     
-    // Shuffle tokens so they're not in order
-    const shuffled = [...colorTokens].sort(() => Math.random() - 0.5);
+    // Deterministically shuffle tokens so they're not in generation order
+    // but everyone gets the same shuffle for the same day
+    const shuffled = deterministicShuffle(colorTokens, seed);
     
     return {
       status: 200,
       jsonBody: {
         date: today,
-        colorTokens: shuffled.map(t => ({ id: t.id, hash: t.hash, hex: t.hex })),
+        colorTokens: shuffled,
         maxAttempts: colorCount,
       },
     };

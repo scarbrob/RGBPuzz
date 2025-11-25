@@ -32,26 +32,37 @@ export async function validateSolution(
     const seed = generateDailySeed(date, salt);
     const colors = generateColorsFromSeed(seed, colorCount);
     
-    // Create mapping of token IDs to colors
-    const tokenToColor = new Map();
+    // Create mapping of hash IDs to colors
+    const hashToIndex = new Map();
     colors.forEach((color, index) => {
-      const id = `color-${index}`;
-      tokenToColor.set(id, color);
+      const hash = createColorToken(color, index, salt);
+      hashToIndex.set(hash, index);
     });
     
-    // Get the correct order (sorted by RGB value)
+    // Convert submitted hash IDs to indices
+    const submittedIndices = orderedTokenIds.map(hash => hashToIndex.get(hash));
+    
+    // Check if all hashes are valid
+    if (submittedIndices.some(idx => idx === undefined)) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Invalid color tokens' },
+      };
+    }
+    
+    // Get the correct order (indices sorted by RGB value)
     const correctOrder = colors
-      .map((color, index) => ({ id: `color-${index}`, value: rgbToValue(color) }))
+      .map((color, index) => ({ index, value: rgbToValue(color) }))
       .sort((a, b) => a.value - b.value)
-      .map(item => item.id);
+      .map(item => item.index);
     
     // Check if user's order matches
-    const correct = JSON.stringify(orderedTokenIds) === JSON.stringify(correctOrder);
+    const correct = JSON.stringify(submittedIndices) === JSON.stringify(correctOrder);
     
     // Find which positions are correct
-    const correctPositions = orderedTokenIds
-      .map((id, index) => correctOrder[index] === id ? index : -1)
-      .filter(index => index !== -1);
+    const correctPositions = submittedIndices
+      .map((idx, position) => correctOrder[position] === idx ? position : -1)
+      .filter(position => position !== -1);
     
     return {
       status: 200,

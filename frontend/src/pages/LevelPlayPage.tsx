@@ -123,7 +123,7 @@ export default function LevelPlayPage() {
   const handleSubmit = async () => {
     if (gameState !== 'playing') return
 
-    const orderedTokens = colors.map(c => c.encrypted)
+    const orderedTokens = colors.map(c => c.id)
     
     try {
       const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {

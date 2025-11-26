@@ -107,7 +107,7 @@ export default function DailyChallengePage() {
   const handleSubmit = async () => {
     if (gameState !== 'playing') return;
 
-    const orderedTokens = colors.map(c => c.encrypted);
+    const orderedTokens = colors.map(c => c.id);
     const today = new Date().toISOString().split('T')[0];
     
     try {

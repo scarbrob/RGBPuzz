@@ -9,7 +9,7 @@
 export const msalConfig = {
   auth: {
     clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || 'your-client-id',
-    authority: import.meta.env.VITE_AZURE_AD_AUTHORITY || 'https://rgbpuzz.ciamlogin.com/common',
+    authority: import.meta.env.VITE_AZURE_AD_AUTHORITY || 'https://rgbpuzz.ciamlogin.com/e13a9ac4-2458-47a7-8f8f-743e6fd1aeb5',
     knownAuthorities: ['rgbpuzz.ciamlogin.com'],
     redirectUri: import.meta.env.VITE_REDIRECT_URI || 'http://localhost:3000',
     postLogoutRedirectUri: import.meta.env.VITE_REDIRECT_URI || 'http://localhost:3000',

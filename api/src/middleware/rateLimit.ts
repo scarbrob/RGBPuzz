@@ -10,15 +10,8 @@ interface RateLimitEntry {
 // In-memory store (for production, use Redis or Azure Cache)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (entry.resetTime < now) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 300000);
+// Note: Automatic cleanup disabled for Azure Functions compatibility
+// Old entries will be cleaned up naturally when their time window expires
 
 export interface RateLimitConfig {
   windowMs: number;  // Time window in milliseconds

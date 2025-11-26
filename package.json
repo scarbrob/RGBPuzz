@@ -3,18 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "Daily color-sorting puzzle game",
-  "workspaces": [
-    "frontend",
-    "api",
-    "shared"
-  ],
   "scripts": {
-    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=api && npm install --workspace=shared",
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "dev:api": "npm run start --workspace=api",
-    "build:frontend": "npm run build --workspace=frontend",
-    "build:api": "npm run build --workspace=api",
-    "test": "npm run test --workspaces"
+    "install:all": "cd frontend && npm install && cd ../api && npm install && cd ../shared && npm install",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:api": "cd api && npm run start",
+    "build:frontend": "cd frontend && npm run build",
+    "build:api": "cd api && npm run build",
+    "clean": "Remove-Item -Recurse -Force frontend/node_modules, api/node_modules, shared/node_modules, node_modules -ErrorAction SilentlyContinue"
   },
   "keywords": [
     "puzzle",

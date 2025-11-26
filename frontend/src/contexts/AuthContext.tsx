@@ -109,14 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const msal = await initializeMsal()
       
-      const loginRequestWithHint = {
+      // Use prompt to select account which will show the identity provider selection
+      const loginRequestForGoogle = {
         ...loginRequest,
-        extraQueryParameters: {
-          domain_hint: 'google.com',
-        },
+        prompt: 'select_account' as const,
       }
       
-      await msal.loginRedirect(loginRequestWithHint)
+      await msal.loginRedirect(loginRequestForGoogle)
     } catch (error) {
       console.error('Sign in with Google error:', error)
       throw error

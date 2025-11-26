@@ -1,5 +1,8 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateDailySeed, generateColorsFromSeed, generateLevelColors, createColorToken, rgbToValue } from '../utils/colorGenerator';
+import { validateTokenIds, validateDifficulty, validateLevel, validateDate } from '../middleware/validation';
+import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
+import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
 
 interface ValidationRequest {
   date?: string;
@@ -18,7 +21,20 @@ export async function validateSolution(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return handleCorsPreflightOptions();
+  }
+  
   try {
+    // Check rate limit
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.validateSolution);
+    
+    if (!rateLimitResult.allowed) {
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+    }
+    
     context.log('Validate solution called');
     
     let body: ValidationRequest;
@@ -27,19 +43,21 @@ export async function validateSolution(
       context.log('Request body:', JSON.stringify(body));
     } catch (parseError) {
       context.error('JSON parse error:', parseError);
-      return {
+      return addCorsHeaders({
         status: 400,
         jsonBody: { error: 'Invalid JSON in request body' },
-      };
+      });
     }
     
     const { orderedTokenIds, mode = 'daily', difficulty, level } = body;
     
-    if (!orderedTokenIds || !Array.isArray(orderedTokenIds)) {
-      return {
+    // Validate token IDs
+    const tokenError = validateTokenIds(orderedTokenIds);
+    if (tokenError) {
+      return addCorsHeaders({
         status: 400,
-        jsonBody: { error: 'Invalid request body: orderedTokenIds required' },
-      };
+        jsonBody: { error: tokenError.message, field: tokenError.field },
+      });
     }
     
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
@@ -48,10 +66,27 @@ export async function validateSolution(
     // Generate colors based on mode
     if (mode === 'level') {
       if (!difficulty || !level) {
-        return {
+        return addCorsHeaders({
           status: 400,
           jsonBody: { error: 'Difficulty and level required for level mode' },
-        };
+        });
+      }
+      
+      // Validate difficulty and level
+      const difficultyError = validateDifficulty(difficulty);
+      if (difficultyError) {
+        return addCorsHeaders({
+          status: 400,
+          jsonBody: { error: difficultyError.message, field: difficultyError.field },
+        });
+      }
+      
+      const levelError = validateLevel(level);
+      if (levelError) {
+        return addCorsHeaders({
+          status: 400,
+          jsonBody: { error: levelError.message, field: levelError.field },
+        });
       }
       
       context.log(`Validating level: ${difficulty} ${level}`);
@@ -60,6 +95,18 @@ export async function validateSolution(
       // Daily challenge mode
       const queryDate = request.query.get('date');
       const date = body.date || queryDate || new Date().toISOString().split('T')[0];
+      
+      // Validate date if provided
+      if (body.date || queryDate) {
+        const dateError = validateDate(date);
+        if (dateError) {
+          return addCorsHeaders({
+            status: 400,
+            jsonBody: { error: dateError.message, field: dateError.field },
+          });
+        }
+      }
+      
       context.log('Validating solution for date:', date);
       
       const colorCount = 5;
@@ -80,10 +127,10 @@ export async function validateSolution(
     
     // Check if all hashes are valid
     if (submittedIndices.some(idx => idx === undefined)) {
-      return {
+      return addCorsHeaders({
         status: 400,
         jsonBody: { error: 'Invalid color tokens' },
-      };
+      });
     }
     
     // Get the correct order (indices sorted by RGB value)
@@ -100,7 +147,7 @@ export async function validateSolution(
       .map((idx, position) => correctOrder[position] === idx ? position : -1)
       .filter(position => position !== -1);
     
-    return {
+    return addCorsHeaders({
       status: 200,
       jsonBody: {
         correct,
@@ -108,12 +155,12 @@ export async function validateSolution(
         // Don't send the actual solution until they've used all attempts or won
         solved: correct,
       },
-    };
+    });
   } catch (error) {
     context.error('Error validating solution:', error);
-    return {
+    return addCorsHeaders({
       status: 500,
       jsonBody: { error: 'Internal server error' },
-    };
+    });
   }
 }

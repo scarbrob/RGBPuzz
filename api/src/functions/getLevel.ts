@@ -1,5 +1,8 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateLevelColors, createColorToken, deterministicShuffle, encryptHex } from '../utils/colorGenerator';
+import { validateDifficulty, validateLevel } from '../middleware/validation';
+import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
+import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
 
 /**
  * GET /api/level?difficulty={difficulty}&level={level}
@@ -11,31 +14,47 @@ export async function getLevel(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return handleCorsPreflightOptions();
+  }
+
   try {
+    // Rate limiting
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getLevel);
+    if (!rateLimitResult.allowed) {
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+    }
+
     const difficulty = request.query.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
     const levelStr = request.query.get('level');
     
     if (!difficulty || !levelStr) {
-      return {
+      return addCorsHeaders({
         status: 400,
         jsonBody: { error: 'Difficulty and level required' },
-      };
+      });
+    }
+    
+    // Validate difficulty
+    const difficultyError = validateDifficulty(difficulty);
+    if (difficultyError) {
+      return addCorsHeaders({
+        status: 400,
+        jsonBody: { error: difficultyError.message, field: difficultyError.field },
+      });
     }
     
     const level = parseInt(levelStr);
     
-    if (!['easy', 'medium', 'hard', 'insane'].includes(difficulty)) {
-      return {
+    // Validate level
+    const levelError = validateLevel(level);
+    if (levelError) {
+      return addCorsHeaders({
         status: 400,
-        jsonBody: { error: 'Invalid difficulty. Must be easy, medium, hard, or insane' },
-      };
-    }
-    
-    if (level < 1 || level > 100) {
-      return {
-        status: 400,
-        jsonBody: { error: 'Level must be between 1 and 100' },
-      };
+        jsonBody: { error: levelError.message, field: levelError.field },
+      });
     }
     
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
@@ -53,7 +72,7 @@ export async function getLevel(
     // Deterministic shuffle based on difficulty and level
     const shuffled = deterministicShuffle(colorTokens, `${difficulty}-${level}`);
     
-    return {
+    return addCorsHeaders({
       status: 200,
       jsonBody: {
         difficulty,
@@ -61,12 +80,12 @@ export async function getLevel(
         colorCount: colors.length,
         colorTokens: shuffled,
       },
-    };
+    });
   } catch (error) {
     context.error('Error fetching level:', error);
-    return {
+    return addCorsHeaders({
       status: 500,
       jsonBody: { error: 'Internal server error' },
-    };
+    });
   }
 }

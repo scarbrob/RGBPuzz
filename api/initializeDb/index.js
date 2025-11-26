@@ -7,22 +7,24 @@ module.exports = async function (context, req) {
             json: async () => req.body,
             text: async () => JSON.stringify(req.body),
             body: req.body,
-            query: req.query,
+            query: {
+                get: (key) => req.query[key] || null
+            },
             params: req.params
         };
         
-        const { getUserStats } = require(path.join(__dirname, '..', 'dist', 'functions', 'userStats'));
-        const response = await getUserStats(mockRequest, context);
+        const { initializeDatabase } = require(path.join(__dirname, '..', 'dist', 'functions', 'initDb'));
+        const response = await initializeDatabase(mockRequest, context);
         context.res = {
             status: response.status || 200,
             headers: response.headers || {},
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log.error('Error in userStats:', error);
+        context.log.error('Error in initializeDatabase:', error);
         context.res = {
             status: 500,
-            body: { error: 'Internal server error' }
+            body: { error: 'Internal server error', details: error.message }
         };
     }
 };

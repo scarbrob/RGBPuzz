@@ -9,3 +9,7 @@ export { getDailyChallenge } from './functions/dailyChallenge';
 export { validateSolution } from './functions/validateSolution';
 export { getLevel } from './functions/getLevel';
 export { getUserStats } from './functions/userStats';
+export { getUserStatsHandler } from './functions/getUserStatsHandler';
+export { updateDailyStatsHandler } from './functions/updateDailyStatsHandler';
+export { updateLevelStatsHandler } from './functions/updateLevelStatsHandler';
+export { initializeDatabase } from './functions/initDb';

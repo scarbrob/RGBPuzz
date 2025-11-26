@@ -4,13 +4,24 @@ module.exports = async function (context, req) {
     try {
         // Create mock HttpRequest object for v4 function signature
         const mockRequest = {
+            method: req.method || 'POST',
             json: async () => req.body,
             text: async () => JSON.stringify(req.body),
             body: req.body,
             query: {
                 get: (key) => req.query[key] || null
             },
-            params: req.params
+            params: req.params,
+            headers: {
+                get: (key) => {
+                    if (!req.headers) return null;
+                    const lowerKey = key.toLowerCase();
+                    for (const [k, v] of Object.entries(req.headers)) {
+                        if (k.toLowerCase() === lowerKey) return v;
+                    }
+                    return null;
+                }
+            }
         };
         
         const { initializeDatabase } = require(path.join(__dirname, '..', 'dist', 'functions', 'initDb'));
@@ -21,7 +32,7 @@ module.exports = async function (context, req) {
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log.error('Error in initializeDatabase:', error);
+        context.log('Error in initializeDatabase:', error);
         context.res = {
             status: 500,
             body: { error: 'Internal server error', details: error.message }

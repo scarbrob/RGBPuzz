@@ -11,7 +11,7 @@ export default function LevelPlayPage() {
   const { difficulty, level } = useParams<{ difficulty: Difficulty; level: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [colors, setColors] = useState<Array<{ id: string; hex: string }>>([])
+  const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [attempts, setAttempts] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
@@ -100,7 +100,8 @@ export default function LevelPlayPage() {
         // Decrypt the hex values
         const decryptedColors = data.colorTokens.map((token: { id: string; encrypted: string }) => ({
           id: token.id,
-          hex: decryptHex(token.encrypted, token.id)
+          hex: decryptHex(token.encrypted, token.id),
+          encrypted: token.encrypted
         }))
         
         setColors(decryptedColors)
@@ -108,9 +109,9 @@ export default function LevelPlayPage() {
         console.error('Error fetching level:', error)
         // Fallback to mock data
         const mockColors = [
-          { id: 'color-0', hex: '#ff6b6b' },
-          { id: 'color-1', hex: '#4ecdc4' },
-          { id: 'color-2', hex: '#45b7d1' },
+          { id: 'color-0', hex: '#ff6b6b', encrypted: '' },
+          { id: 'color-1', hex: '#4ecdc4', encrypted: '' },
+          { id: 'color-2', hex: '#45b7d1', encrypted: '' },
         ]
         setColors(mockColors)
       }
@@ -122,7 +123,7 @@ export default function LevelPlayPage() {
   const handleSubmit = async () => {
     if (gameState !== 'playing') return
 
-    const currentOrder = colors.map(c => c.id)
+    const orderedTokens = colors.map(c => c.encrypted)
     
     try {
       const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {
@@ -132,7 +133,7 @@ export default function LevelPlayPage() {
           mode: 'level',
           difficulty,
           level: parseInt(level || '1'),
-          orderedTokenIds: currentOrder,
+          orderedTokenIds: orderedTokens,
         }),
       })
       
@@ -142,7 +143,7 @@ export default function LevelPlayPage() {
       setAttempts(prev => prev + 1)
       
       const correct = result.correctPositions || []
-      const incorrect = currentOrder.map((_, idx) => idx).filter(idx => !correct.includes(idx))
+      const incorrect = colors.map((_, idx) => idx).filter(idx => !correct.includes(idx))
       
       setCorrectPositions(correct)
       setIncorrectPositions(incorrect)
@@ -205,7 +206,7 @@ export default function LevelPlayPage() {
     }
   }
 
-  const handleReorder = (newColors: Array<{ id: string; hex: string }>) => {
+  const handleReorder = (newColors: Array<{ id: string; hex: string; encrypted: string }>) => {
     setColors(newColors)
     // Clear both correct and incorrect positions when reordering
     setCorrectPositions([])

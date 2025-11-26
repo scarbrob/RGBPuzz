@@ -42,7 +42,7 @@ export async function validateSolution(
       body = await request.json() as ValidationRequest;
       context.log('Request body:', JSON.stringify(body));
     } catch (parseError) {
-      context.error('JSON parse error:', parseError);
+      context.log('JSON parse error:', parseError);
       return addCorsHeaders({
         status: 400,
         jsonBody: { error: 'Invalid JSON in request body' },
@@ -157,7 +157,7 @@ export async function validateSolution(
       },
     });
   } catch (error) {
-    context.error('Error validating solution:', error);
+    context.log('Error validating solution:', error);
     return addCorsHeaders({
       status: 500,
       jsonBody: { error: 'Internal server error' },

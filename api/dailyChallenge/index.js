@@ -25,7 +25,7 @@ module.exports = async function (context, req) {
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log.error('Error in dailyChallenge:', error);
+        context.log('Error in dailyChallenge:', error);
         context.res = {
             status: 500,
             body: { error: 'Internal server error' }

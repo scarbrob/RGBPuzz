@@ -6,7 +6,7 @@ import { updateDailyStats } from '../services/statsService'
 
 export default function DailyChallengePage() {
   const { user } = useAuth()
-  const [colors, setColors] = useState<Array<{ id: string; hex: string }>>([])
+  const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [attempts, setAttempts] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState(5)
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
@@ -17,7 +17,7 @@ export default function DailyChallengePage() {
   const [challengeDate, setChallengeDate] = useState<string>('')
   const [startTime] = useState<number>(Date.now())
   const [attemptHistory, setAttemptHistory] = useState<Array<{
-    colors: Array<{ id: string; hex: string }>;
+    colors: Array<{ id: string; hex: string; encrypted: string }>;
     correctPositions: number[];
     incorrectPositions: number[];
   }>>([])
@@ -79,7 +79,8 @@ export default function DailyChallengePage() {
         // Decrypt the hex values from encrypted tokens
         const decryptedColors = data.colorTokens.map((token: { id: string; encrypted: string }) => ({
           id: token.id,
-          hex: decryptHex(token.encrypted, token.id)
+          hex: decryptHex(token.encrypted, token.id),
+          encrypted: token.encrypted
         }));
         
         setColors(decryptedColors);
@@ -89,11 +90,11 @@ export default function DailyChallengePage() {
         console.error('Error fetching daily challenge:', error);
         // Fallback to mock data
         const mockColors = [
-          { id: 'color-0', hex: '#ff6b6b' },
-          { id: 'color-1', hex: '#4ecdc4' },
-          { id: 'color-2', hex: '#45b7d1' },
-          { id: 'color-3', hex: '#96ceb4' },
-          { id: 'color-4', hex: '#ffeaa7' },
+          { id: 'color-0', hex: '#ff6b6b', encrypted: '' },
+          { id: 'color-1', hex: '#4ecdc4', encrypted: '' },
+          { id: 'color-2', hex: '#45b7d1', encrypted: '' },
+          { id: 'color-3', hex: '#96ceb4', encrypted: '' },
+          { id: 'color-4', hex: '#ffeaa7', encrypted: '' },
         ];
         setColors(mockColors);
         setMaxAttempts(mockColors.length);
@@ -106,7 +107,7 @@ export default function DailyChallengePage() {
   const handleSubmit = async () => {
     if (gameState !== 'playing') return;
 
-    const currentOrder = colors.map(c => c.id);
+    const orderedTokens = colors.map(c => c.encrypted);
     const today = new Date().toISOString().split('T')[0];
     
     try {
@@ -116,7 +117,7 @@ export default function DailyChallengePage() {
         body: JSON.stringify({
           mode: 'daily',
           date: challengeDate,
-          orderedTokenIds: currentOrder,
+          orderedTokenIds: orderedTokens,
         }),
       });
       
@@ -126,7 +127,7 @@ export default function DailyChallengePage() {
       setAttempts(prev => prev + 1);
       
       const correct = result.correctPositions || [];
-      const incorrect = currentOrder.map((_, idx) => idx).filter(idx => !correct.includes(idx));
+      const incorrect = colors.map((_, idx) => idx).filter(idx => !correct.includes(idx));
       
       setCorrectPositions(correct);
       setIncorrectPositions(incorrect);

@@ -66,22 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Initialize user stats in background
         initializeUserStats(userData.id, userData.email, userData.displayName)
       } else {
-        // Check for existing session
-        const accounts = msal.getAllAccounts()
-        if (accounts.length > 0) {
-          const userData = accountToUser(accounts[0])
-          setUser(userData)
-          localStorage.setItem('rgbpuzz-user', JSON.stringify(userData))
-        } else {
-          // Check localStorage as fallback
-          const savedUser = localStorage.getItem('rgbpuzz-user')
-          if (savedUser) {
-            try {
-              setUser(JSON.parse(savedUser))
-            } catch (error) {
-              console.error('Failed to parse saved user:', error)
-              localStorage.removeItem('rgbpuzz-user')
-            }
+        // Only restore user if they explicitly logged in before
+        // Don't auto-login from MSAL cache
+        const savedUser = localStorage.getItem('rgbpuzz-user')
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser)
+            setUser(parsedUser)
+          } catch (error) {
+            console.error('Failed to parse saved user:', error)
+            localStorage.removeItem('rgbpuzz-user')
           }
         }
       }
@@ -94,84 +88,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithMicrosoft = async () => {
     try {
-      // Check if we're in mock mode (no real Azure AD B2C configured)
-      const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID
-      
-      if (!clientId || clientId === 'your-client-id' || clientId.startsWith('mock-')) {
-        console.log('Using mock authentication for Microsoft')
-        const mockUser: User = {
-          id: `microsoft-${Date.now()}`,
-          email: `user@microsoft.com`,
-          displayName: `Microsoft User`,
-          provider: 'microsoft',
-        }
-        setUser(mockUser)
-        localStorage.setItem('rgbpuzz-user', JSON.stringify(mockUser))
-        // Clear session storage for fresh start
-        sessionStorage.clear()
-        
-        // Initialize user stats and wait for it to complete before reloading
-        try {
-          await initializeUserStats(mockUser.id, mockUser.email, mockUser.displayName)
-        } catch (error) {
-          console.error('Failed to initialize user stats during sign in:', error)
-          // Continue anyway - stats will be created on first game/stats page visit
-        }
-        
-        // Reload page to refresh all data
-        window.location.reload()
-        return
-      }
-
-      // Real Azure AD B2C authentication
       const msal = await initializeMsal()
       
       // Use domain_hint to specify identity provider
       const loginRequestWithHint = {
         ...loginRequest,
         extraQueryParameters: {
-          domain_hint: 'microsoft.com', // This tells Azure AD B2C which IDP to use
+          domain_hint: 'microsoft.com',
         },
       }
       
-      console.log('MSAL Config:', msalConfig)
-      console.log('Login Request:', loginRequestWithHint)
-      
       await msal.loginRedirect(loginRequestWithHint)
     } catch (error) {
-      console.error(`Sign in with Microsoft error:`, error)
+      console.error('Sign in with Microsoft error:', error)
       throw error
     }
   }
 
   const signInWithGoogle = async () => {
     try {
-      // Check if we're in mock mode
-      const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID
-      
-      if (!clientId || clientId === 'your-client-id' || clientId.startsWith('mock-')) {
-        console.log('Using mock authentication for Google')
-        const mockUser: User = {
-          id: `google-${Date.now()}`,
-          email: `user@gmail.com`,
-          displayName: `Google User`,
-          provider: 'google',
-        }
-        setUser(mockUser)
-        localStorage.setItem('rgbpuzz-user', JSON.stringify(mockUser))
-        sessionStorage.clear()
-        
-        try {
-          await initializeUserStats(mockUser.id, mockUser.email, mockUser.displayName)
-        } catch (error) {
-          console.error('Failed to initialize user stats during sign in:', error)
-        }
-        
-        window.location.reload()
-        return
-      }
-
-      // Real Azure authentication with Google provider
       const msal = await initializeMsal()
       
       const loginRequestWithHint = {
@@ -181,47 +116,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       }
       
-      console.log('MSAL Config:', msalConfig)
-      console.log('Login Request (Google):', loginRequestWithHint)
-      
       await msal.loginRedirect(loginRequestWithHint)
     } catch (error) {
-      console.error(`Sign in with Google error:`, error)
+      console.error('Sign in with Google error:', error)
       throw error
     }
   }
 
   const signOut = async () => {
     try {
-      const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID
-      
-      if (!clientId || clientId === 'your-client-id' || clientId.startsWith('mock-')) {
-        // Mock mode - just clear local state
-        setUser(null)
-        localStorage.removeItem('rgbpuzz-user')
-        // Clear all session storage to prevent data leakage between users
-        sessionStorage.clear()
-        // Reload page to refresh all data
-        window.location.reload()
-        return
-      }
-
-      // Real Azure AD B2C sign out
       const msal = await initializeMsal()
-      const accounts = msal.getAllAccounts()
-      
-      if (accounts.length > 0) {
-        await msal.logoutRedirect({
-          account: accounts[0],
-        })
-      }
       
       setUser(null)
       localStorage.removeItem('rgbpuzz-user')
-      // Clear all session storage to prevent data leakage between users
       sessionStorage.clear()
-      // Reload page to refresh all data
-      window.location.reload()
+      
+      await msal.logoutRedirect()
     } catch (error) {
       console.error('Sign out error:', error)
       // Clear local state even if logout fails

@@ -7,7 +7,7 @@ interface SignInModalProps {
 }
 
 export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
-  const { signInWithMicrosoft, signInWithGoogle } = useAuth()
+  const { signInWithMicrosoft } = useAuth()
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -27,6 +27,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
     }
   }
 
+  /* TODO: Enable when Google is configured in Azure Entra External ID
   const handleGoogleSignIn = async () => {
     setError('')
     setIsLoading(true)
@@ -40,6 +41,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
       setIsLoading(false)
     }
   }
+  */
 
   const handleClose = () => {
     setError('')
@@ -76,6 +78,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
             Continue with Microsoft
           </button>
 
+          {/* TODO: Configure Google as identity provider in Azure Entra External ID
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
@@ -89,6 +92,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
             </svg>
             Continue with Google
           </button>
+          */}
         </div>
 
         {error && (

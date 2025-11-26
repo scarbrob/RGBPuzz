@@ -1,12 +1,14 @@
 name: Deploy Azure Functions
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'api/**'
-      - '.github/workflows/azure-functions.yml'
+  # Temporarily disabled - use manual deployment with 'func azure functionapp publish'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'api/**'
+  #     - '.github/workflows/azure-functions.yml'
+  workflow_dispatch:
 
 env:
   AZURE_FUNCTIONAPP_NAME: rgbpuzz-api

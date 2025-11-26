@@ -23,7 +23,8 @@ export default function DailyChallengePage() {
   }>>([])
   const [statsUpdated, setStatsUpdated] = useState(false)
   const resetPuzzle = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     sessionStorage.removeItem(`rgbpuzz-${today}`);
     window.location.reload();
   };
@@ -50,7 +51,8 @@ export default function DailyChallengePage() {
   useEffect(() => {
     // Fetch daily challenge from API
     const fetchChallenge = async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const sessionKey = user ? `rgbpuzz-${user.id}-${today}` : `rgbpuzz-local-${today}`;
       const savedState = sessionStorage.getItem(sessionKey);
       

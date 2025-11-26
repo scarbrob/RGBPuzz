@@ -156,7 +156,7 @@ export function validateTokenIds(tokenIds: any): ValidationError | null {
   }
   
   for (const token of tokenIds) {
-    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) {
+    if (typeof token !== 'string' || !/^[a-f0-9]{16}$/.test(token)) {
       return { field: 'orderedTokenIds', message: 'invalid token format' };
     }
   }

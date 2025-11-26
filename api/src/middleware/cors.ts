@@ -21,12 +21,32 @@ export function handleCorsPreflightOptions() {
 
 /**
  * Add CORS headers to response
+ * Note: Origin validation is handled by Azure Functions CORS settings in production
  */
-export function addCorsHeaders(response: any) {
+export function addCorsHeaders(response: any, origin?: string) {
+  const headers: Record<string, string> = { ...corsHeaders };
+  
+  // If specific origin provided and validation is enabled, validate it
+  if (origin && process.env.ALLOWED_ORIGINS !== '*') {
+    if (isOriginAllowed(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+    } else {
+      // Don't include the origin header
+      const { 'Access-Control-Allow-Origin': _, ...headersWithoutOrigin } = headers;
+      return {
+        ...response,
+        headers: {
+          ...headersWithoutOrigin,
+          ...(response.headers || {}),
+        },
+      };
+    }
+  }
+  
   return {
     ...response,
     headers: {
-      ...corsHeaders,
+      ...headers,
       ...(response.headers || {}),
     },
   };

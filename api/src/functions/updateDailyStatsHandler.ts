@@ -27,7 +27,7 @@ export async function updateDailyStatsHandler(request: any, context: any) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.updateStats);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.updateStats.maxRequests));
     }
 
     const body = await request.json() as UpdateDailyStatsRequest;

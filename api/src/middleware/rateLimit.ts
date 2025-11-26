@@ -80,16 +80,24 @@ export function checkRateLimit(
 export function getClientIdentifier(request: any): string {
   // Try to get user ID from query params
   const userId = request.query.get('userId');
-  if (userId) {
+  if (userId && typeof userId === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(userId)) {
     return `user:${userId}`;
   }
   
   // Fall back to IP address
-  const ip = request.headers.get('x-forwarded-for') || 
-             request.headers.get('x-real-ip') || 
-             'unknown';
+  let ip = request.headers.get('x-forwarded-for') || 
+           request.headers.get('x-real-ip') || 
+           'unknown';
   
-  return `ip:${ip}`;
+  // Take first IP if x-forwarded-for contains multiple IPs
+  if (ip.includes(',')) {
+    ip = ip.split(',')[0].trim();
+  }
+  
+  // Sanitize IP to prevent injection
+  ip = ip.replace(/[^0-9a-f.:]/gi, '').substring(0, 45);
+  
+  return `ip:${ip || 'unknown'}`;
 }
 
 /**
@@ -130,19 +138,20 @@ export const rateLimitConfigs = {
 /**
  * Create rate limit response
  */
-export function createRateLimitResponse(result: RateLimitResult) {
+export function createRateLimitResponse(result: RateLimitResult, maxRequests: number = 20) {
+  const retryAfter = result.retryAfter || 60;
   return {
     status: 429,
     headers: {
-      'Retry-After': result.retryAfter?.toString() || '60',
-      'X-RateLimit-Limit': '20',
+      'Retry-After': retryAfter.toString(),
+      'X-RateLimit-Limit': maxRequests.toString(),
       'X-RateLimit-Remaining': result.remaining.toString(),
       'X-RateLimit-Reset': new Date(result.resetTime).toISOString(),
     },
     jsonBody: {
       error: 'Too many requests',
-      message: `Rate limit exceeded. Please try again in ${result.retryAfter} seconds.`,
-      retryAfter: result.retryAfter,
+      message: `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
+      retryAfter: retryAfter,
     },
   };
 }

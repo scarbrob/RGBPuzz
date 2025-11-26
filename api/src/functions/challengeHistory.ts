@@ -21,7 +21,7 @@ export async function getChallengeHistory(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getUserStats);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getUserStats.maxRequests));
     }
 
     // TODO: Add authentication check for premium users

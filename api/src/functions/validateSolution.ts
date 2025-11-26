@@ -32,7 +32,7 @@ export async function validateSolution(
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.validateSolution);
     
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.validateSolution.maxRequests));
     }
     
     context.log('Validate solution called');

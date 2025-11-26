@@ -24,7 +24,7 @@ export async function getLevel(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getLevel);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
     }
 
     const difficulty = request.query.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';

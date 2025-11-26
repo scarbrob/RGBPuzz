@@ -25,7 +25,7 @@ export async function getDailyChallenge(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.dailyChallenge);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.dailyChallenge.maxRequests));
     }
 
     // Get date from query param or use server's current date

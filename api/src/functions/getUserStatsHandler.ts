@@ -15,7 +15,7 @@ export async function getUserStatsHandler(request: any, context: any) {
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getUserStats);
     
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult));
+      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getUserStats.maxRequests));
     }
     
     // Get userId from query params
@@ -41,12 +41,15 @@ export async function getUserStatsHandler(request: any, context: any) {
       });
     }
     
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return addCorsHeaders({
-        status: 400,
-        jsonBody: { error: emailError.message, field: emailError.field },
-      });
+    // Email is optional, only validate if provided
+    if (email) {
+      const emailError = validateEmail(email);
+      if (emailError) {
+        return addCorsHeaders({
+          status: 400,
+          jsonBody: { error: emailError.message, field: emailError.field },
+        });
+      }
     }
     
     const sanitizedDisplayName = validateDisplayName(displayName);

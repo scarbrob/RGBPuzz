@@ -29,12 +29,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd frontend
+          cd shared
+          npm install
+          cd ../frontend
           npm install
 
       - name: Build
         run: |
-          cd frontend
+          cd shared
+          npm run build
+          cd ../frontend
           npm run build
 
       - name: Deploy

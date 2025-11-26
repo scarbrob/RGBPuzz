@@ -22,29 +22,31 @@ export default function Header() {
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Desktop Navigation */}
               <div className="hidden md:flex gap-4 lg:gap-6">
-                <Link to="/daily" className="text-light-text-primary dark:text-dark-text-primary hover:text-light-accent dark:hover:text-dark-accent transition-colors font-medium">
+                {user && (
+                  <span className="text-light-text-secondary dark:text-dark-text-secondary text-sm">
+                    {user.displayName || user.email}
+                  </span>
+                )}
+                <Link to="/daily" className="bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium">
                   Daily
                 </Link>
-                <Link to="/levels" className="text-light-text-primary dark:text-dark-text-primary hover:text-light-accent dark:hover:text-dark-accent transition-colors font-medium">
+                <Link to="/levels" className="bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium">
                   Levels
                 </Link>
-                <Link to="/stats" className="text-light-text-primary dark:text-dark-text-primary hover:text-light-accent dark:hover:text-dark-accent transition-colors font-medium">
+                <Link to="/stats" className="bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium">
                   Stats
                 </Link>
                 {user ? (
-                  <>
-                    <span className="text-light-text-secondary dark:text-dark-text-secondary text-sm">{user.displayName || user.email}</span>
-                    <button
-                      onClick={signOut}
-                      className="text-light-text-primary dark:text-dark-text-primary hover:text-light-accent dark:hover:text-dark-accent transition-colors"
-                    >
-                      Sign Out
-                    </button>
-                  </>
+                  <button
+                    onClick={signOut}
+                    className="bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform"
+                  >
+                    Sign Out
+                  </button>
                 ) : (
                   <button
                     onClick={() => setShowSignIn(true)}
-                    className="text-light-text-primary dark:text-dark-text-primary hover:text-light-accent dark:hover:text-dark-accent transition-colors font-medium"
+                    className="bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
                   >
                     Sign In
                   </button>
@@ -74,59 +76,89 @@ export default function Header() {
                   className="p-2 rounded-lg hover:bg-light-surface/30 dark:hover:bg-dark-surface/20 transition-colors"
                   aria-label="Menu"
                 >
-                  <svg className="w-6 h-6 text-light-text-primary dark:text-dark-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="url(#gradient)" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" className="text-light-accent dark:text-dark-accent" style={{stopColor: 'currentColor'}} />
+                        <stop offset="50%" className="text-purple-600 dark:text-purple-400" style={{stopColor: 'currentColor'}} />
+                        <stop offset="100%" className="text-pink-600 dark:text-pink-400" style={{stopColor: 'currentColor'}} />
+                      </linearGradient>
+                    </defs>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
                 
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-48 rounded-lg bg-light-surface dark:bg-dark-surface shadow-lg border border-light-border/30 dark:border-dark-border/30 z-50">
-                    <Link
-                      to="/daily"
-                      onClick={() => setShowMenu(false)}
-                      className="block px-4 py-3 text-light-text-primary dark:text-dark-text-primary hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors first:rounded-t-lg"
-                    >
-                      Daily Challenge
-                    </Link>
-                    <Link
-                      to="/levels"
-                      onClick={() => setShowMenu(false)}
-                      className="block px-4 py-3 text-light-text-primary dark:text-dark-text-primary hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
-                    >
-                      Levels
-                    </Link>
-                    <Link
-                      to="/stats"
-                      onClick={() => setShowMenu(false)}
-                      className="block px-4 py-3 text-light-text-primary dark:text-dark-text-primary hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
-                    >
-                      Stats
-                    </Link>
                     {user ? (
                       <>
-                        <div className="px-4 py-2 text-sm text-light-text-secondary dark:text-dark-text-secondary border-t border-light-border/30 dark:border-dark-border/30">
+                        <div className="px-4 py-3 text-sm text-light-text-secondary dark:text-dark-text-secondary border-b border-light-border/30 dark:border-dark-border/30 rounded-t-lg">
                           {user.displayName || user.email}
                         </div>
+                        <Link
+                          to="/daily"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
+                        >
+                          Daily Challenge
+                        </Link>
+                        <Link
+                          to="/levels"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
+                        >
+                          Levels
+                        </Link>
+                        <Link
+                          to="/stats"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
+                        >
+                          Stats
+                        </Link>
                         <button
                           onClick={() => {
                             signOut()
                             setShowMenu(false)
                           }}
-                          className="block w-full text-left px-4 py-3 text-light-text-primary dark:text-dark-text-primary hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors last:rounded-b-lg"
+                          className="block w-full text-left px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium border-t border-light-border/30 dark:border-dark-border/30 rounded-b-lg"
                         >
                           Sign Out
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => {
-                          setShowSignIn(true)
-                          setShowMenu(false)
-                        }}
-                        className="block w-full text-left px-4 py-3 text-light-text-primary dark:text-dark-text-primary hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors border-t border-light-border/30 dark:border-dark-border/30 last:rounded-b-lg"
-                      >
-                        Sign In
-                      </button>
+                      <>
+                        <Link
+                          to="/daily"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium first:rounded-t-lg"
+                        >
+                          Daily Challenge
+                        </Link>
+                        <Link
+                          to="/levels"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
+                        >
+                          Levels
+                        </Link>
+                        <Link
+                          to="/stats"
+                          onClick={() => setShowMenu(false)}
+                          className="block px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium"
+                        >
+                          Stats
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setShowSignIn(true)
+                            setShowMenu(false)
+                          }}
+                          className="block w-full text-left px-4 py-3 bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform font-medium border-t border-light-border/30 dark:border-dark-border/30 rounded-b-lg"
+                        >
+                          Sign In
+                        </button>
+                      </>
                     )}
                   </div>
                 )}

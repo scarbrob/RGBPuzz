@@ -2,25 +2,82 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ColorBoard from '../components/ColorBoard'
 import { decryptHex } from '../../../shared/src/crypto'
+import { useAuth } from '../contexts/AuthContext'
+import { updateLevelStats, getUserStats } from '../services/statsService'
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'insane'
 
 export default function LevelPlayPage() {
   const { difficulty, level } = useParams<{ difficulty: Difficulty; level: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string }>>([])
   const [attempts, setAttempts] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
   const [incorrectPositions, setIncorrectPositions] = useState<number[]>([])
+  const [startTime] = useState<number>(Date.now())
+  const [statsUpdated, setStatsUpdated] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+  const [fastestTimeForDifficulty, setFastestTimeForDifficulty] = useState<number | undefined>(undefined)
+  const [timingActive, setTimingActive] = useState(true)
+
+  // Fetch user's fastest time for this difficulty
+  useEffect(() => {
+    const fetchFastestTime = async () => {
+      if (user && difficulty) {
+        try {
+          const stats = await getUserStats(user.id, user.email || '')
+          const fastestKey = `${difficulty}FastestTime` as keyof typeof stats
+          setFastestTimeForDifficulty(stats[fastestKey] as number | undefined)
+        } catch (error) {
+          console.error('Failed to fetch fastest time:', error)
+        }
+      }
+    }
+    fetchFastestTime()
+  }, [user, difficulty])
+
+  // Check if current time exceeds fastest and stop timing
+  useEffect(() => {
+    if (!timingActive || !fastestTimeForDifficulty || gameState !== 'playing') return
+    
+    const interval = setInterval(() => {
+      const currentTime = Date.now() - startTime
+      if (currentTime > fastestTimeForDifficulty) {
+        setTimingActive(false)
+        console.log('Stopped timing - exceeded fastest time')
+      }
+    }, 1000) // Check every second
+
+    return () => clearInterval(interval)
+  }, [timingActive, fastestTimeForDifficulty, startTime, gameState])
+
+  // Save attempts when navigating away
+  useEffect(() => {
+    return () => {
+      // Cleanup: save attempts if the level was played but not yet updated
+      if (user && difficulty && level && attempts > 0 && !statsUpdated) {
+        const totalTime = Date.now() - startTime;
+        updateLevelStats({
+          userId: user.id,
+          difficulty: difficulty as 'easy' | 'medium' | 'hard' | 'insane',
+          level: parseInt(level),
+          attempts,
+          solved: false,
+          solveTime: totalTime,
+        }).catch(err => console.error('Failed to save level attempts on exit:', err));
+      }
+    };
+  }, [user, difficulty, level, attempts, statsUpdated, startTime]);
 
   useEffect(() => {
     const fetchLevel = async () => {
       if (!difficulty || !level) return
 
       // Check for saved session state
-      const sessionKey = `level-${difficulty}-${level}`
+      const sessionKey = user ? `level-${user.id}-${difficulty}-${level}` : `level-local-${difficulty}-${level}`
       const savedState = sessionStorage.getItem(sessionKey)
       
       if (savedState) {
@@ -99,29 +156,43 @@ export default function LevelPlayPage() {
         setGameState('won')
         setFeedback(newFeedback)
         
-        // Save completion to localStorage (for unlocking next level)
-        const savedProgress = localStorage.getItem('levelProgress')
-        const progress = savedProgress ? JSON.parse(savedProgress) : { easy: {}, medium: {}, hard: {}, insane: {} }
-        if (difficulty) {
-          progress[difficulty][parseInt(level || '1')] = true
-        }
-        localStorage.setItem('levelProgress', JSON.stringify(progress))
-        
-        // Save attempt count to localStorage (for stats)
-        const statsKey = `level-stats-${difficulty}-${level}`
-        const existingStats = localStorage.getItem(statsKey)
-        const currentAttemptCount = attempts + 1
-        
-        // Only save if it's a new best (fewer attempts) or first completion
-        if (!existingStats || currentAttemptCount < parseInt(existingStats)) {
-          localStorage.setItem(statsKey, currentAttemptCount.toString())
+        // Update stats for authenticated users
+        if (user && difficulty && level && !statsUpdated) {
+          const solveTime = timingActive ? Date.now() - startTime : undefined;
+          updateLevelStats({
+            userId: user.id,
+            difficulty,
+            level: parseInt(level),
+            attempts: attempts + 1,
+            solved: true,
+            solveTime,
+          }).catch(err => console.error('Failed to update level stats:', err));
+          setStatsUpdated(true);
+        } else if (!user) {
+          // Save to localStorage only if not logged in
+          const savedProgress = localStorage.getItem('levelProgress')
+          const progress = savedProgress ? JSON.parse(savedProgress) : { easy: {}, medium: {}, hard: {}, insane: {} }
+          if (difficulty) {
+            progress[difficulty][parseInt(level || '1')] = true
+          }
+          localStorage.setItem('levelProgress', JSON.stringify(progress))
+          
+          // Save attempt count to localStorage (for stats)
+          const statsKey = `level-stats-${difficulty}-${level}`
+          const existingStats = localStorage.getItem(statsKey)
+          const currentAttemptCount = attempts + 1
+          
+          // Only save if it's a new best (fewer attempts) or first completion
+          if (!existingStats || currentAttemptCount < parseInt(existingStats)) {
+            localStorage.setItem(statsKey, currentAttemptCount.toString())
+          }
         }
       } else {
         setFeedback('')
       }
       
       // Save session state
-      const sessionKey = `level-${difficulty}-${level}`
+      const sessionKey = user ? `level-${user.id}-${difficulty}-${level}` : `level-local-${difficulty}-${level}`
       sessionStorage.setItem(sessionKey, JSON.stringify({
         colors,
         attempts: attempts + 1,
@@ -181,6 +252,30 @@ export default function LevelPlayPage() {
           </p>
         </div>
         <div className="w-32"></div>
+      </div>
+
+      {/* Color Spectrum Hint */}
+      <div className="mb-8">
+        <button
+          onClick={() => setShowHint(!showHint)}
+          className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
+        >
+          💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
+        </button>
+        {showHint && (
+          <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(to right, #000000, #0000ff, #00ff00, #00ffff, #ff0000, #ff00ff, #ffff00, #ffffff)'
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
+              <span>Darkest</span>
+              <span>Lightest</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {colors.length > 0 && (

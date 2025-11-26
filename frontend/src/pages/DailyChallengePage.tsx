@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import ColorBoard from '../components/ColorBoard'
 import { decryptHex } from '../../../shared/src/crypto'
+import { useAuth } from '../contexts/AuthContext'
+import { updateDailyStats } from '../services/statsService'
 
 export default function DailyChallengePage() {
+  const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string }>>([])
   const [attempts, setAttempts] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState(5)
@@ -12,12 +15,13 @@ export default function DailyChallengePage() {
   const [incorrectPositions, setIncorrectPositions] = useState<number[]>([])
   const [showHint, setShowHint] = useState(false)
   const [challengeDate, setChallengeDate] = useState<string>('')
+  const [startTime] = useState<number>(Date.now())
   const [attemptHistory, setAttemptHistory] = useState<Array<{
     colors: Array<{ id: string; hex: string }>;
     correctPositions: number[];
     incorrectPositions: number[];
   }>>([])
-
+  const [statsUpdated, setStatsUpdated] = useState(false)
   const resetPuzzle = () => {
     const today = new Date().toISOString().split('T')[0];
     sessionStorage.removeItem(`rgbpuzz-${today}`);
@@ -47,7 +51,8 @@ export default function DailyChallengePage() {
     // Fetch daily challenge from API
     const fetchChallenge = async () => {
       const today = new Date().toISOString().split('T')[0];
-      const savedState = sessionStorage.getItem(`rgbpuzz-${today}`);
+      const sessionKey = user ? `rgbpuzz-${user.id}-${today}` : `rgbpuzz-local-${today}`;
+      const savedState = sessionStorage.getItem(sessionKey);
       
       if (savedState) {
         const parsed = JSON.parse(savedState);
@@ -100,6 +105,7 @@ export default function DailyChallengePage() {
     if (gameState !== 'playing') return;
 
     const currentOrder = colors.map(c => c.id);
+    const today = new Date().toISOString().split('T')[0];
     
     try {
       const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {
@@ -139,19 +145,43 @@ export default function DailyChallengePage() {
         newFeedback = `🎉 Solved in ${attempts + 1}/${maxAttempts}!`;
         setGameState('won');
         setFeedback(newFeedback);
+        
+        // Update stats for authenticated users
+        if (user && !statsUpdated) {
+          const solveTime = Date.now() - startTime;
+          updateDailyStats({
+            userId: user.id,
+            date: today,
+            attempts: attempts + 1,
+            solved: true,
+            solveTime,
+          }).catch(err => console.error('Failed to update stats:', err));
+          setStatsUpdated(true);
+        }
       } else if (attempts + 1 >= maxAttempts) {
         newGameState = 'lost';
         newFeedback = '😔 Out of attempts! Try again tomorrow.';
         setGameState('lost');
         setFeedback(newFeedback);
+        
+        // Update stats for authenticated users (loss)
+        if (user && !statsUpdated) {
+          updateDailyStats({
+            userId: user.id,
+            date: today,
+            attempts: attempts + 1,
+            solved: false,
+          }).catch(err => console.error('Failed to update stats:', err));
+          setStatsUpdated(true);
+        }
       } else {
         // No feedback during play - let the icons do the talking
         setFeedback('');
       }
       
-      // Save to sessionStorage
-      const today = new Date().toISOString().split('T')[0];
-      sessionStorage.setItem(`rgbpuzz-${today}`, JSON.stringify({
+      // Save state to sessionStorage
+      const sessionKey = user ? `rgbpuzz-${user.id}-${challengeDate}` : `rgbpuzz-local-${challengeDate}`;
+      sessionStorage.setItem(sessionKey, JSON.stringify({
         colors,
         attempts: attempts + 1,
         maxAttempts,
@@ -167,10 +197,10 @@ export default function DailyChallengePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in">
-      <div className="text-center mb-10 mt-8">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent pb-2">
+    <div className="max-w-4xl mx-auto animate-fade-in px-4">
+      <div className="text-center mb-6 sm:mb-8 md:mb-10 mt-4 sm:mt-6 md:mt-8">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent pb-2">
             Daily Challenge
           </h1>
           {process.env.NODE_ENV === 'development' && (
@@ -183,7 +213,7 @@ export default function DailyChallengePage() {
             </button>
           )}
         </div>
-        <p className="text-light-text-secondary dark:text-dark-text-secondary text-lg leading-tight">
+        <p className="text-light-text-secondary dark:text-dark-text-secondary text-sm sm:text-base md:text-lg leading-tight">
           {new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -193,14 +223,14 @@ export default function DailyChallengePage() {
         </p>
       </div>
 
-      <div className="mb-8 animate-slide-in">
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-lg">
+      <div className="mb-6 sm:mb-8 animate-slide-in">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="text-base sm:text-lg">
             <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
-            <span className="font-bold ml-2 text-2xl text-light-accent dark:text-dark-accent">{attempts}</span>
+            <span className="font-bold ml-2 text-xl sm:text-2xl text-light-accent dark:text-dark-accent">{attempts}</span>
             <span className="text-light-text-secondary dark:text-dark-text-secondary"> / {maxAttempts}</span>
           </div>
-          <div className="text-light-text-secondary dark:text-dark-text-secondary text-sm font-medium">
+          <div className="text-light-text-secondary dark:text-dark-text-secondary text-xs sm:text-sm font-medium text-center sm:text-right">
             Order colors from <span className="text-light-accent dark:text-dark-accent">darkest</span> to <span className="text-light-accent dark:text-dark-accent">lightest</span>.
           </div>
         </div>
@@ -209,7 +239,7 @@ export default function DailyChallengePage() {
         <div className="mb-8">
           <button
             onClick={() => setShowHint(!showHint)}
-            className="w-full text-center text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-accent dark:hover:text-dark-accent mb-3 transition-colors font-medium"
+            className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
           >
             💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
           </button>
@@ -252,9 +282,9 @@ export default function DailyChallengePage() {
           }}
         />
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 sm:mt-8 flex justify-center">
           <button 
-            className="game-button w-full max-w-md text-lg py-4"
+            className="game-button w-full max-w-md text-base sm:text-lg py-3 sm:py-4"
             onClick={handleSubmit}
             disabled={gameState !== 'playing'}
           >
@@ -264,17 +294,17 @@ export default function DailyChallengePage() {
       </div>
 
       {gameState !== 'playing' && (
-        <div className="mt-12 animate-slide-in">
-          <h3 className="text-xl font-bold mb-4 text-center text-light-text-primary dark:text-dark-text-primary">Share Your Result</h3>
-          <div className="flex justify-center mb-4">
+        <div className="mt-8 sm:mt-12 animate-slide-in">
+          <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-center text-light-text-primary dark:text-dark-text-primary">Share Your Result</h3>
+          <div className="flex justify-center mb-3 sm:mb-4">
             <button 
-              className="game-button"
+              className="game-button text-sm sm:text-base"
               onClick={copyResults}
             >
               📋 Copy Result
             </button>
           </div>
-          <div className="mt-4 p-4 bg-light-surface/50 dark:bg-dark-surface/30 rounded-xl text-sm font-mono text-light-text-secondary dark:text-dark-text-secondary whitespace-pre-line text-center">
+          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-light-surface/50 dark:bg-dark-surface/30 rounded-xl text-xs sm:text-sm font-mono text-light-text-secondary dark:text-dark-text-secondary whitespace-pre-line text-center">
             RGBPuzz {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
             {attempts}/{maxAttempts}<br/>
             <br/>
@@ -290,14 +320,14 @@ export default function DailyChallengePage() {
       )}
 
       {attemptHistory.length > 0 && (
-        <div className="animate-slide-in mt-12">
-          <h3 className="text-2xl font-bold mb-6 text-light-text-primary dark:text-dark-text-primary">Previous Attempts</h3>
-          <div className="space-y-4">
+        <div className="animate-slide-in mt-8 sm:mt-12">
+          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-light-text-primary dark:text-dark-text-primary">Previous Attempts</h3>
+          <div className="space-y-3 sm:space-y-4">
             {[...attemptHistory].reverse().map((attempt, reverseIndex) => {
               const attemptIndex = attemptHistory.length - 1 - reverseIndex;
               return (
-                <div key={attemptIndex} className="rounded-xl p-4 bg-light-surface/50 dark:bg-dark-surface/30">
-                  <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-3 font-medium">Attempt {attemptIndex + 1}</div>
+                <div key={attemptIndex} className="rounded-xl p-3 sm:p-4 bg-light-surface/50 dark:bg-dark-surface/30">
+                  <div className="text-xs sm:text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2 sm:mb-3 font-medium">Attempt {attemptIndex + 1}</div>
                   <div className="flex gap-2 justify-center flex-wrap">
                     {attempt.colors.map((color, colorIndex) => (
                       <div

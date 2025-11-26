@@ -33,13 +33,13 @@ body {
   
   .game-button {
     @apply px-6 py-3 font-semibold rounded-xl transition-all duration-200
-           text-white hover:scale-105 hover:shadow-lg active:scale-95
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
-    background-color: #667eea;
+           hover:scale-105 hover:shadow-lg active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+           bg-light-accent text-white;
   }
   
   .dark .game-button {
-    background-color: #818cf8;
+    @apply bg-dark-accent text-dark-bg;
   }
   
   .game-card {

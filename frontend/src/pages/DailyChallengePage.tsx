@@ -57,33 +57,35 @@ export default function DailyChallengePage() {
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
-      // Check sessionStorage first (fastest, works for same device)
-      const sessionKey = user ? `rgbpuzz-${user.id}-${today}` : `rgbpuzz-local-${today}`;
-      const savedState = sessionStorage.getItem(sessionKey);
-      
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-        setColors(parsed.colors);
-        setAttempts(parsed.attempts);
-        setMaxAttempts(parsed.maxAttempts);
-        setGameState(parsed.gameState);
-        setFeedback(parsed.feedback);
-        setAttemptHistory(parsed.attemptHistory || []);
-        setChallengeDate(parsed.challengeDate || today);
-        setStatsUpdated(parsed.statsUpdated || false);
+      // Check sessionStorage ONLY for non-authenticated users
+      if (!user) {
+        const sessionKey = `rgbpuzz-local-${today}`;
+        const savedState = sessionStorage.getItem(sessionKey);
         
-        // If the challenge is already complete, restore the final state
-        if (parsed.gameState !== 'playing') {
-          setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
-        } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
-          const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1];
-          setCorrectPositions(lastAttempt.correctPositions || []);
-          setIncorrectPositions(lastAttempt.incorrectPositions || []);
+        if (savedState) {
+          const parsed = JSON.parse(savedState);
+          setColors(parsed.colors);
+          setAttempts(parsed.attempts);
+          setMaxAttempts(parsed.maxAttempts);
+          setGameState(parsed.gameState);
+          setFeedback(parsed.feedback);
+          setAttemptHistory(parsed.attemptHistory || []);
+          setChallengeDate(parsed.challengeDate || today);
+          setStatsUpdated(parsed.statsUpdated || false);
+          
+          // If the challenge is already complete, restore the final state
+          if (parsed.gameState !== 'playing') {
+            setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
+          } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
+            const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1];
+            setCorrectPositions(lastAttempt.correctPositions || []);
+            setIncorrectPositions(lastAttempt.incorrectPositions || []);
+          }
+          return;
         }
-        return;
       }
       
-      // For authenticated users on a new device, check database
+      // For authenticated users, always check database
       let dbAttempt = null;
       if (user) {
         try {
@@ -119,8 +121,26 @@ export default function DailyChallengePage() {
           setStatsUpdated(true);
           
           // Restore board state and attempt history if available
-          const savedColors = dbAttempt.boardState || decryptedColors;
-          const savedHistory = dbAttempt.attemptHistory || [];
+          // Decrypt the hex values from encrypted tokens
+          const savedColors = dbAttempt.boardState 
+            ? dbAttempt.boardState.map((token: { id: string; encrypted: string }) => ({
+                id: token.id,
+                hex: decryptHex(token.encrypted, token.id),
+                encrypted: token.encrypted
+              }))
+            : decryptedColors;
+          
+          const savedHistory = dbAttempt.attemptHistory 
+            ? dbAttempt.attemptHistory.map((attempt: any) => ({
+                colors: attempt.colors.map((token: { id: string; encrypted: string }) => ({
+                  id: token.id,
+                  hex: decryptHex(token.encrypted, token.id),
+                  encrypted: token.encrypted
+                })),
+                correctPositions: attempt.correctPositions,
+                incorrectPositions: attempt.incorrectPositions
+              }))
+            : [];
           
           setColors(savedColors);
           setAttemptHistory(savedHistory);
@@ -139,19 +159,6 @@ export default function DailyChallengePage() {
               setIncorrectPositions(lastAttempt.incorrectPositions || []);
             }
           }
-          
-          // Save to sessionStorage so we don't need to check database again
-          const stateToSave = {
-            colors: savedColors,
-            attempts: dbAttempt.attempts,
-            maxAttempts: data.maxAttempts,
-            gameState: dbAttempt.solved ? 'won' : (dbAttempt.attempts >= data.maxAttempts ? 'lost' : 'playing'),
-            feedback: dbAttempt.solved ? `🎉 Solved in ${dbAttempt.attempts}/${data.maxAttempts}!` : (dbAttempt.attempts >= data.maxAttempts ? '😔 Out of attempts! Try again tomorrow.' : ''),
-            attemptHistory: savedHistory,
-            challengeDate: data.date,
-            statsUpdated: true
-          };
-          sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
         }
       } catch (error) {
         console.error('Error fetching daily challenge:', error);
@@ -225,8 +232,12 @@ export default function DailyChallengePage() {
             attempts: attempts + 1,
             solved: true,
             solveTime,
-            boardState: colors,
-            attemptHistory: newHistory,
+            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: newHistory.map(h => ({
+              colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+              correctPositions: h.correctPositions,
+              incorrectPositions: h.incorrectPositions
+            })),
           }).catch(err => console.error('Failed to update stats:', err));
           setStatsUpdated(true);
         }
@@ -243,30 +254,52 @@ export default function DailyChallengePage() {
             date: today,
             attempts: attempts + 1,
             solved: false,
-            boardState: colors,
-            attemptHistory: newHistory,
+            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: newHistory.map(h => ({
+              colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+              correctPositions: h.correctPositions,
+              incorrectPositions: h.incorrectPositions
+            })),
           }).catch(err => console.error('Failed to update stats:', err));
           setStatsUpdated(true);
         }
       } else {
         // No feedback during play - let the icons do the talking
         setFeedback('');
+        
+        // Save in-progress attempts for authenticated users
+        if (user) {
+          updateDailyStats({
+            userId: user.id,
+            date: today,
+            attempts: attempts + 1,
+            solved: false,
+            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: newHistory.map(h => ({
+              colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+              correctPositions: h.correctPositions,
+              incorrectPositions: h.incorrectPositions
+            })),
+          }).catch(err => console.error('Failed to save in-progress daily:', err));
+        }
       }
       
-      // Save state to sessionStorage
-      const stateToSave = {
-        colors,
-        attempts: attempts + 1,
-        maxAttempts,
-        gameState: newGameState,
-        feedback: newFeedback,
-        attemptHistory: newHistory,
-        challengeDate,
-        statsUpdated: statsUpdated || (newGameState !== 'playing')
-      };
-      
-      const sessionKey = user ? `rgbpuzz-${user.id}-${challengeDate}` : `rgbpuzz-local-${challengeDate}`;
-      sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+      // Save state to sessionStorage (only for non-authenticated users)
+      if (!user) {
+        const stateToSave = {
+          colors,
+          attempts: attempts + 1,
+          maxAttempts,
+          gameState: newGameState,
+          feedback: newFeedback,
+          attemptHistory: newHistory,
+          challengeDate,
+          statsUpdated: statsUpdated || (newGameState !== 'playing')
+        };
+        
+        const sessionKey = `rgbpuzz-local-${challengeDate}`;
+        sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+      }
     } catch (error) {
       console.error('Error validating solution:', error);
       setFeedback('❌ Error checking solution. Please try again.');

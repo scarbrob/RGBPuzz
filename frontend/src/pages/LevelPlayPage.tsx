@@ -81,32 +81,34 @@ export default function LevelPlayPage() {
     const fetchLevel = async () => {
       if (!difficulty || !level) return
 
-      // Check for saved session state first
-      const sessionKey = user ? `level-${user.id}-${difficulty}-${level}` : `level-local-${difficulty}-${level}`
-      const savedState = sessionStorage.getItem(sessionKey)
-      
-      if (savedState) {
-        const parsed = JSON.parse(savedState)
-        setColors(parsed.colors)
-        setAttempts(parsed.attempts)
-        setGameState(parsed.gameState)
-        setFeedback(parsed.feedback)
-        setAttemptHistory(parsed.attemptHistory || [])
-        setStatsUpdated(parsed.statsUpdated || false)
+      // Check sessionStorage ONLY for non-authenticated users
+      if (!user) {
+        const sessionKey = `level-local-${difficulty}-${level}`;
+        const savedState = sessionStorage.getItem(sessionKey);
         
-        // If the level is complete, restore the final state
-        if (parsed.gameState !== 'playing') {
-          setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx))
-        } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
-          // Restore the feedback from the last attempt if still playing
-          const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1]
-          setCorrectPositions(lastAttempt.correctPositions || [])
-          setIncorrectPositions(lastAttempt.incorrectPositions || [])
+        if (savedState) {
+          const parsed = JSON.parse(savedState);
+          setColors(parsed.colors);
+          setAttempts(parsed.attempts);
+          setGameState(parsed.gameState);
+          setFeedback(parsed.feedback);
+          setAttemptHistory(parsed.attemptHistory || []);
+          setStatsUpdated(parsed.statsUpdated || false);
+          
+          // If the level is complete, restore the final state
+          if (parsed.gameState !== 'playing') {
+            setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
+          } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
+            // Restore the feedback from the last attempt if still playing
+            const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1];
+            setCorrectPositions(lastAttempt.correctPositions || []);
+            setIncorrectPositions(lastAttempt.incorrectPositions || []);
+          }
+          return;
         }
-        return
       }
 
-      // For authenticated users on a new device, check database for completion
+      // For authenticated users, always check database for progress
       let dbAttempt = null;
       if (user) {
         try {
@@ -138,30 +140,45 @@ export default function LevelPlayPage() {
         
         setColors(decryptedColors)
         
-        // If user has already completed this level (from database), lock it
-        if (dbAttempt && dbAttempt.solved) {
+        // If user has previous attempts in the database, restore them
+        if (dbAttempt) {
           // Restore board state and attempt history if available
-          const savedColors = dbAttempt.boardState ? JSON.parse(dbAttempt.boardState) : decryptedColors;
-          const savedHistory = dbAttempt.attemptHistory ? JSON.parse(dbAttempt.attemptHistory) : [];
+          // Decrypt the hex values from encrypted tokens
+          const savedColors = dbAttempt.boardState 
+            ? JSON.parse(dbAttempt.boardState).map((token: { id: string; encrypted: string }) => ({
+                id: token.id,
+                hex: decryptHex(token.encrypted, token.id),
+                encrypted: token.encrypted
+              }))
+            : decryptedColors;
+          
+          const savedHistory = dbAttempt.attemptHistory 
+            ? JSON.parse(dbAttempt.attemptHistory).map((attempt: any) => ({
+                colors: attempt.colors.map((token: { id: string; encrypted: string }) => ({
+                  id: token.id,
+                  hex: decryptHex(token.encrypted, token.id),
+                  encrypted: token.encrypted
+                })),
+                correctPositions: attempt.correctPositions,
+                incorrectPositions: attempt.incorrectPositions
+              }))
+            : [];
           
           setColors(savedColors);
           setAttempts(dbAttempt.attempts);
-          setGameState('won');
-          setFeedback(`🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`);
-          setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
           setAttemptHistory(savedHistory);
-          setStatsUpdated(true);
           
-          // Save to sessionStorage so we don't need to check database again
-          const stateToSave = {
-            colors: savedColors,
-            attempts: dbAttempt.attempts,
-            gameState: 'won',
-            feedback: `🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`,
-            attemptHistory: savedHistory,
-            statsUpdated: true
-          };
-          sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+          if (dbAttempt.solved) {
+            setGameState('won');
+            setFeedback(`🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`);
+            setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
+            setStatsUpdated(true);
+          } else if (savedHistory.length > 0) {
+            // Restore last attempt feedback for in-progress levels
+            const lastAttempt = savedHistory[savedHistory.length - 1];
+            setCorrectPositions(lastAttempt.correctPositions || []);
+            setIncorrectPositions(lastAttempt.incorrectPositions || []);
+          }
         }
       } catch (error) {
         console.error('Error fetching level:', error)
@@ -233,8 +250,12 @@ export default function LevelPlayPage() {
             attempts: attempts + 1,
             solved: true,
             solveTime,
-            boardState: colors,
-            attemptHistory: newHistory,
+            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: newHistory.map(h => ({
+              colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+              correctPositions: h.correctPositions,
+              incorrectPositions: h.incorrectPositions
+            })),
           }).catch(err => console.error('Failed to update level stats:', err));
           setStatsUpdated(true);
         } else if (!user) {
@@ -258,22 +279,40 @@ export default function LevelPlayPage() {
         }
       } else {
         setFeedback('')
+        
+        // Save in-progress attempts for authenticated users
+        if (user && difficulty && level) {
+          updateLevelStats({
+            userId: user.id,
+            difficulty,
+            level: parseInt(level),
+            attempts: attempts + 1,
+            solved: false,
+            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: newHistory.map(h => ({
+              colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+              correctPositions: h.correctPositions,
+              incorrectPositions: h.incorrectPositions
+            })),
+          }).catch(err => console.error('Failed to save in-progress level:', err));
+        }
       }
       
       // Save session state
-      const stateToSave = {
-        colors,
-        attempts: attempts + 1,
-        gameState: newGameState,
-        feedback: newFeedback,
-        attemptHistory: newHistory,
-        statsUpdated: statsUpdated || (newGameState !== 'playing')
-      };
-      
-      const sessionKey = user 
-        ? `level-${user.id}-${difficulty}-${level}` 
-        : `level-local-${difficulty}-${level}`;
-      sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+      // Save session state (only for non-authenticated users)
+      if (!user) {
+        const stateToSave = {
+          colors,
+          attempts: attempts + 1,
+          gameState: newGameState,
+          feedback: newFeedback,
+          attemptHistory: newHistory,
+          statsUpdated: statsUpdated || (newGameState !== 'playing')
+        };
+        
+        const sessionKey = `level-local-${difficulty}-${level}`;
+        sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+      }
     } catch (error) {
       console.error('Error validating solution:', error)
       setFeedback('Error validating solution. Please try again.')

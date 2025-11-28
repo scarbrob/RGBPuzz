@@ -11,6 +11,8 @@ interface UpdateLevelStatsRequest {
   attempts: number;
   solved: boolean;
   solveTime?: number;
+  boardState?: any[];
+  attemptHistory?: any[];
 }
 
 /**
@@ -32,7 +34,7 @@ export async function updateLevelStatsHandler(request: any, context: any) {
     }
 
     const body = await request.json() as UpdateLevelStatsRequest;
-    const { userId, difficulty, level, attempts, solved, solveTime } = body;
+    const { userId, difficulty, level, attempts, solved, solveTime, boardState, attemptHistory } = body;
 
     // Authentication (if enabled)
     const authResult = await requireAuth(request, userId);
@@ -93,7 +95,7 @@ export async function updateLevelStatsHandler(request: any, context: any) {
       }
     }
 
-    await updateLevelStats(userId, difficulty, level, attempts, solved, solveTime);
+    await updateLevelStats(userId, difficulty, level, attempts, solved, solveTime, boardState, attemptHistory);
 
     return addCorsHeaders({
       status: 200,

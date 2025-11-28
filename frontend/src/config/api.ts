@@ -16,4 +16,5 @@ export const API_ENDPOINTS = {
   updateDailyStats: () => `${API_BASE_URL}/user/daily-stats`,
   updateLevelStats: () => `${API_BASE_URL}/user/level-stats`,
   getLevelProgress: (userId: string, difficulty: string) => `${API_BASE_URL}/user/level-progress?userId=${userId}&difficulty=${difficulty}`,
+  getDailyAttempt: (userId: string, date: string) => `${API_BASE_URL}/daily-attempt?userId=${encodeURIComponent(userId)}&date=${date}`,
 } as const;

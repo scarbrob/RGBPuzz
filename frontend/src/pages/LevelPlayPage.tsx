@@ -23,6 +23,11 @@ export default function LevelPlayPage() {
   const [showHint, setShowHint] = useState(false)
   const [fastestTimeForDifficulty, setFastestTimeForDifficulty] = useState<number | undefined>(undefined)
   const [timingActive, setTimingActive] = useState(true)
+  const [attemptHistory, setAttemptHistory] = useState<Array<{
+    colors: Array<{ id: string; hex: string; encrypted: string }>;
+    correctPositions: number[];
+    incorrectPositions: number[];
+  }>>([])
 
   // Fetch user's fastest time for this difficulty
   useEffect(() => {
@@ -76,7 +81,7 @@ export default function LevelPlayPage() {
     const fetchLevel = async () => {
       if (!difficulty || !level) return
 
-      // Check for saved session state
+      // Check for saved session state first
       const sessionKey = user ? `level-${user.id}-${difficulty}-${level}` : `level-local-${difficulty}-${level}`
       const savedState = sessionStorage.getItem(sessionKey)
       
@@ -86,10 +91,37 @@ export default function LevelPlayPage() {
         setAttempts(parsed.attempts)
         setGameState(parsed.gameState)
         setFeedback(parsed.feedback)
+        setAttemptHistory(parsed.attemptHistory || [])
+        setStatsUpdated(parsed.statsUpdated || false)
+        
+        // If the level is complete, restore the final state
         if (parsed.gameState !== 'playing') {
           setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx))
+        } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
+          // Restore the feedback from the last attempt if still playing
+          const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1]
+          setCorrectPositions(lastAttempt.correctPositions || [])
+          setIncorrectPositions(lastAttempt.incorrectPositions || [])
         }
         return
+      }
+
+      // For authenticated users on a new device, check database for completion
+      let dbAttempt = null;
+      if (user) {
+        try {
+          const response = await fetch(API_ENDPOINTS.getLevelProgress(user.id, difficulty));
+          if (response.ok) {
+            const progressData = await response.json();
+            // Find this specific level in the progress data
+            dbAttempt = progressData.find((p: any) => p.level === parseInt(level));
+            if (dbAttempt) {
+              console.log('Found existing level attempt in database:', dbAttempt);
+            }
+          }
+        } catch (error) {
+          console.log('No existing level progress found in database');
+        }
       }
 
       try {
@@ -105,6 +137,32 @@ export default function LevelPlayPage() {
         }))
         
         setColors(decryptedColors)
+        
+        // If user has already completed this level (from database), lock it
+        if (dbAttempt && dbAttempt.solved) {
+          // Restore board state and attempt history if available
+          const savedColors = dbAttempt.boardState ? JSON.parse(dbAttempt.boardState) : decryptedColors;
+          const savedHistory = dbAttempt.attemptHistory ? JSON.parse(dbAttempt.attemptHistory) : [];
+          
+          setColors(savedColors);
+          setAttempts(dbAttempt.attempts);
+          setGameState('won');
+          setFeedback(`🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`);
+          setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
+          setAttemptHistory(savedHistory);
+          setStatsUpdated(true);
+          
+          // Save to sessionStorage so we don't need to check database again
+          const stateToSave = {
+            colors: savedColors,
+            attempts: dbAttempt.attempts,
+            gameState: 'won',
+            feedback: `🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`,
+            attemptHistory: savedHistory,
+            statsUpdated: true
+          };
+          sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
+        }
       } catch (error) {
         console.error('Error fetching level:', error)
         // Fallback to mock data
@@ -118,7 +176,7 @@ export default function LevelPlayPage() {
     }
     
     fetchLevel()
-  }, [difficulty, level])
+  }, [difficulty, level, user])
 
   const handleSubmit = async () => {
     if (gameState !== 'playing') return
@@ -148,6 +206,14 @@ export default function LevelPlayPage() {
       setCorrectPositions(correct)
       setIncorrectPositions(incorrect)
       
+      // Save to history
+      const newHistory = [...attemptHistory, {
+        colors: [...colors],
+        correctPositions: correct,
+        incorrectPositions: incorrect
+      }]
+      setAttemptHistory(newHistory)
+      
       let newGameState: 'playing' | 'won' = gameState
       let newFeedback = ''
       
@@ -167,6 +233,8 @@ export default function LevelPlayPage() {
             attempts: attempts + 1,
             solved: true,
             solveTime,
+            boardState: colors,
+            attemptHistory: newHistory,
           }).catch(err => console.error('Failed to update level stats:', err));
           setStatsUpdated(true);
         } else if (!user) {
@@ -193,13 +261,19 @@ export default function LevelPlayPage() {
       }
       
       // Save session state
-      const sessionKey = user ? `level-${user.id}-${difficulty}-${level}` : `level-local-${difficulty}-${level}`
-      sessionStorage.setItem(sessionKey, JSON.stringify({
+      const stateToSave = {
         colors,
         attempts: attempts + 1,
         gameState: newGameState,
-        feedback: newFeedback
-      }))
+        feedback: newFeedback,
+        attemptHistory: newHistory,
+        statsUpdated: statsUpdated || (newGameState !== 'playing')
+      };
+      
+      const sessionKey = user 
+        ? `level-${user.id}-${difficulty}-${level}` 
+        : `level-local-${difficulty}-${level}`;
+      sessionStorage.setItem(sessionKey, JSON.stringify(stateToSave));
     } catch (error) {
       console.error('Error validating solution:', error)
       setFeedback('Error validating solution. Please try again.')

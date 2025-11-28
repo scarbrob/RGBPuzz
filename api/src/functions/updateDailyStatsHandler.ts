@@ -10,6 +10,8 @@ interface UpdateDailyStatsRequest {
   attempts: number;
   solved: boolean;
   solveTime?: number;
+  boardState?: any[];
+  attemptHistory?: any[];
 }
 
 /**
@@ -31,7 +33,7 @@ export async function updateDailyStatsHandler(request: any, context: any) {
     }
 
     const body = await request.json() as UpdateDailyStatsRequest;
-    const { userId, date, attempts, solved, solveTime } = body;
+    const { userId, date, attempts, solved, solveTime, boardState, attemptHistory } = body;
 
     // Authentication (if enabled)
     const authResult = await requireAuth(request, userId);
@@ -84,7 +86,7 @@ export async function updateDailyStatsHandler(request: any, context: any) {
       }
     }
 
-    await updateDailyStats(userId, date, attempts, solved, solveTime);
+    await updateDailyStats(userId, date, attempts, solved, solveTime, boardState, attemptHistory);
 
     return addCorsHeaders({
       status: 200,

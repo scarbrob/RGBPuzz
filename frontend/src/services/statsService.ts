@@ -12,6 +12,8 @@ export interface UpdateDailyStatsParams {
   attempts: number
   solved: boolean
   solveTime?: number
+  boardState?: any[]
+  attemptHistory?: any[]
 }
 
 export interface UpdateLevelStatsParams {
@@ -21,6 +23,8 @@ export interface UpdateLevelStatsParams {
   attempts: number
   solved: boolean
   solveTime?: number
+  boardState?: any[]
+  attemptHistory?: any[]
 }
 
 /**

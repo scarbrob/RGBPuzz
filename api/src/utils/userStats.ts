@@ -80,6 +80,8 @@ export interface DailyAttemptEntity {
   solved: boolean;
   solveTime?: number; // milliseconds
   timestamp: Date;
+  boardState?: string; // JSON stringified array of color objects
+  attemptHistory?: string; // JSON stringified attempt history
 }
 
 export interface LevelAttemptEntity {
@@ -94,6 +96,8 @@ export interface LevelAttemptEntity {
   firstAttemptDate: Date;
   lastAttemptDate: Date;
   solvedDate?: Date;
+  boardState?: string; // JSON stringified array of color objects
+  attemptHistory?: string; // JSON stringified attempt history
 }
 
 // ==================== HELPER FUNCTIONS ====================
@@ -273,7 +277,9 @@ export async function updateDailyStats(
   date: string,
   attempts: number,
   solved: boolean,
-  solveTime?: number
+  solveTime?: number,
+  boardState?: any[],
+  attemptHistory?: any[]
 ): Promise<void> {
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   if (!connectionString) {
@@ -292,6 +298,8 @@ export async function updateDailyStats(
     solved,
     solveTime,
     timestamp: new Date(),
+    boardState: boardState ? JSON.stringify(boardState) : undefined,
+    attemptHistory: attemptHistory ? JSON.stringify(attemptHistory) : undefined,
   };
 
   await attemptsClient.upsertEntity(attemptEntity, 'Replace');
@@ -349,7 +357,9 @@ export async function updateLevelStats(
   level: number,
   attempts: number,
   solved: boolean,
-  solveTime?: number
+  solveTime?: number,
+  boardState?: any[],
+  attemptHistory?: any[]
 ): Promise<void> {
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   if (!connectionString) {
@@ -384,6 +394,14 @@ export async function updateLevelStats(
       levelAttempt.bestTime = solveTime;
     }
     
+    // Update board state
+    if (boardState) {
+      levelAttempt.boardState = JSON.stringify(boardState);
+    }
+    if (attemptHistory) {
+      levelAttempt.attemptHistory = JSON.stringify(attemptHistory);
+    }
+    
     await attemptsClient.updateEntity(levelAttempt, 'Replace');
   } catch (error: any) {
     if (error.statusCode === 404) {
@@ -401,6 +419,8 @@ export async function updateLevelStats(
         firstAttemptDate: new Date(),
         lastAttemptDate: new Date(),
         solvedDate: solved ? new Date() : undefined,
+        boardState: boardState ? JSON.stringify(boardState) : undefined,
+        attemptHistory: attemptHistory ? JSON.stringify(attemptHistory) : undefined,
       };
       
       await attemptsClient.createEntity(levelAttempt);

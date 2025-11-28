@@ -71,8 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = accountToUser(response.account)
         setUser(userData)
         localStorage.setItem('rgbpuzz-user', JSON.stringify(userData))
-        // Clear session storage for fresh start after sign in
-        sessionStorage.clear()
+        // Don't clear session storage - it contains game progress
         // Initialize user stats in background
         initializeUserStats(userData.id, userData.email)
       } else {
@@ -138,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setUser(null)
       localStorage.removeItem('rgbpuzz-user')
-      sessionStorage.clear()
+      // Don't clear session storage - local game progress should persist
       
       await msal.logoutRedirect()
     } catch (error) {
@@ -146,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear local state even if logout fails
       setUser(null)
       localStorage.removeItem('rgbpuzz-user')
-      sessionStorage.clear()
+      // Don't clear session storage - local game progress should persist
       window.location.reload()
     }
   }

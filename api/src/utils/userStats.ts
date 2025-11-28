@@ -1,6 +1,30 @@
 import { TableClient } from '@azure/data-tables';
 
 let tableClient: TableClient | null = null;
+let dailyAttemptsClient: TableClient | null = null;
+let levelAttemptsClient: TableClient | null = null;
+
+/**
+ * Safely create a TableClient with better error handling
+ */
+function createTableClient(connectionString: string, tableName: string): TableClient {
+  try {
+    const client = TableClient.fromConnectionString(connectionString, tableName);
+    
+    if (!client) {
+      throw new Error(`TableClient.fromConnectionString returned ${typeof client} for table ${tableName}`);
+    }
+    
+    // Try to access a property to verify the object is valid
+    if (typeof client.tableName !== 'string') {
+      throw new Error(`TableClient for ${tableName} is invalid - missing tableName property`);
+    }
+    
+    return client;
+  } catch (error: any) {
+    throw new Error(`Failed to create TableClient for ${tableName}: ${error.message}`);
+  }
+}
 
 // ==================== ENTITY INTERFACES ====================
 
@@ -9,7 +33,6 @@ export interface UserStatsEntity {
   rowKey: string; // userId
   userId: string;
   email: string;
-  displayName?: string;
   createdAt: Date;
   lastActive: Date;
   
@@ -90,9 +113,43 @@ export function getStatsTableClient(): TableClient {
     throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
   }
 
-  tableClient = TableClient.fromConnectionString(connectionString, tableName);
+  tableClient = createTableClient(connectionString, tableName);
 
   return tableClient;
+}
+
+/**
+ * Get daily attempts table client
+ */
+export function getDailyAttemptsClient(): TableClient {
+  if (dailyAttemptsClient) {
+    return dailyAttemptsClient;
+  }
+
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!connectionString) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
+  }
+
+  dailyAttemptsClient = createTableClient(connectionString, 'DailyAttempts');
+  return dailyAttemptsClient;
+}
+
+/**
+ * Get level attempts table client
+ */
+export function getLevelAttemptsClient(): TableClient {
+  if (levelAttemptsClient) {
+    return levelAttemptsClient;
+  }
+
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!connectionString) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
+  }
+
+  levelAttemptsClient = createTableClient(connectionString, 'LevelAttempts');
+  return levelAttemptsClient;
 }
 
 /**
@@ -125,7 +182,7 @@ export async function initializeStatsTables(): Promise<void> {
 /**
  * Get or create user stats
  */
-export async function getUserStats(userId: string, email: string, displayName?: string): Promise<UserStatsEntity> {
+export async function getUserStats(userId: string, email: string): Promise<UserStatsEntity> {
   const client = getStatsTableClient();
   
   try {
@@ -166,7 +223,6 @@ export async function getUserStats(userId: string, email: string, displayName?: 
         rowKey: userId,
         userId,
         email,
-        displayName,
         createdAt: new Date(),
         lastActive: new Date(),
         
@@ -222,12 +278,12 @@ export async function updateDailyStats(
   solved: boolean,
   solveTime?: number
 ): Promise<void> {
-  // Record the attempt
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   if (!connectionString) {
     throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
   }
   
+  // Record the attempt
   const attemptsClient = TableClient.fromConnectionString(connectionString, 'DailyAttempts');
 
   const attemptEntity: DailyAttemptEntity = {
@@ -429,8 +485,8 @@ export async function getUserLevelProgress(
     throw new Error('Invalid difficulty level');
   }
   
-  // Sanitize userId (Azure Table Storage row keys can contain alphanumeric, hyphen, underscore)
-  if (!/^[a-zA-Z0-9_-]+$/.test(userId)) {
+  // Sanitize userId (Azure Table Storage row keys can contain alphanumeric, hyphen, underscore, period)
+  if (!/^[a-zA-Z0-9._-]+$/.test(userId)) {
     throw new Error('Invalid userId format');
   }
 

@@ -78,15 +78,17 @@ export function checkRateLimit(
  * Get client identifier from request
  */
 export function getClientIdentifier(request: any): string {
-  // Try to get user ID from query params
-  const userId = request.query.get('userId');
-  if (userId && typeof userId === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(userId)) {
-    return `user:${userId}`;
+  // Try to get user ID from query params (only for GET requests)
+  if (request.query) {
+    const userId = request.query.get('userId');
+    if (userId && typeof userId === 'string' && /^[a-zA-Z0-9._-]{1,128}$/.test(userId)) {
+      return `user:${userId}`;
+    }
   }
   
   // Fall back to IP address
-  let ip = request.headers.get('x-forwarded-for') || 
-           request.headers.get('x-real-ip') || 
+  let ip = request.headers?.get('x-forwarded-for') || 
+           request.headers?.get('x-real-ip') || 
            'unknown';
   
   // Take first IP if x-forwarded-for contains multiple IPs

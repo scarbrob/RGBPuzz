@@ -234,7 +234,7 @@ export default function DailyChallengePage() {
             <span className="text-light-text-secondary dark:text-dark-text-secondary"> / {maxAttempts}</span>
           </div>
           <div className="text-light-text-secondary dark:text-dark-text-secondary text-xs sm:text-sm font-medium text-center sm:text-right">
-            Order colors from <span className="text-light-accent dark:text-dark-accent">darkest</span> to <span className="text-light-accent dark:text-dark-accent">lightest</span>.
+            Order colors from <span className="text-light-accent dark:text-dark-accent">lowest</span> to <span className="text-light-accent dark:text-dark-accent">highest</span> RGB value.
           </div>
         </div>
 
@@ -255,8 +255,8 @@ export default function DailyChallengePage() {
                 }}
               />
               <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
-                <span>Darkest</span>
-                <span>Lightest</span>
+                <span>Lowest RGB</span>
+                <span>Highest RGB</span>
               </div>
             </div>
           )}

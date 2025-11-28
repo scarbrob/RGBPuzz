@@ -22,8 +22,8 @@ export async function getUserLevelProgressHandler(request: any, context: any) {
       return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getUserStats.maxRequests));
     }
 
-    const userId = request.query.get('userId');
-    const difficulty = request.query.get('difficulty');
+    const userId = request.query?.get('userId');
+    const difficulty = request.query?.get('difficulty');
 
     // Authentication (if enabled)
     const authResult = await requireAuth(request, userId);

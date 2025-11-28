@@ -34,11 +34,21 @@ const initializeMsal = async () => {
 
 // Convert MSAL account to our User format
 const accountToUser = (account: AccountInfo): User => {
+  const claims = account.idTokenClaims as any;
+  
+  // Use displayName from token for UI display
+  const displayName = claims?.name || claims?.email;
+  
+  // Use a privacy-friendly identifier for backend storage
+  // Format: {userId}@users.rgbpuzz.com
+  const userId = claims?.oid || claims?.sub || account.homeAccountId;
+  const email = claims?.email || `${userId}@users.rgbpuzz.com`;
+  
   return {
     id: account.homeAccountId,
-    email: account.username,
-    displayName: account.name || account.username,
-    provider: account.idTokenClaims?.['idp'] as string || 'azure',
+    email: String(email),
+    displayName: displayName,
+    provider: claims?.['idp'] || 'azure',
   }
 }
 
@@ -64,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Clear session storage for fresh start after sign in
         sessionStorage.clear()
         // Initialize user stats in background
-        initializeUserStats(userData.id, userData.email, userData.displayName)
+        initializeUserStats(userData.id, userData.email)
       } else {
         // Only restore user if they explicitly logged in before
         // Don't auto-login from MSAL cache

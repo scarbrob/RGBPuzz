@@ -101,9 +101,10 @@ export async function updateLevelStatsHandler(request: any, context: any) {
     });
   } catch (error) {
     console.error('Error updating level stats:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update level stats';
     return addCorsHeaders({
       status: 500,
-      jsonBody: { error: 'Failed to update level stats' },
+      jsonBody: { error: 'Failed to update level stats', details: errorMessage },
     });
   }
 }

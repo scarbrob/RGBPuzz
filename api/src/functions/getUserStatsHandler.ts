@@ -1,5 +1,5 @@
 import { getUserStats } from '../utils/userStats';
-import { validateUserId, validateEmail, validateDisplayName } from '../middleware/validation';
+import { validateUserId, validateEmail } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders } from '../middleware/cors';
 import { requireAuth } from '../middleware/auth';
@@ -19,9 +19,8 @@ export async function getUserStatsHandler(request: any, context: any) {
     }
     
     // Get userId from query params
-    const userId = request.query.get('userId');
-    const email = request.query.get('email');
-    const displayName = request.query.get('displayName');
+    const userId = request.query?.get('userId');
+    const email = request.query?.get('email');
 
     // Authentication (if enabled)
     const authResult = await requireAuth(request, userId);
@@ -51,10 +50,8 @@ export async function getUserStatsHandler(request: any, context: any) {
         });
       }
     }
-    
-    const sanitizedDisplayName = validateDisplayName(displayName);
 
-    const stats = await getUserStats(userId, email, sanitizedDisplayName);
+    const stats = await getUserStats(userId, email);
 
     // Return only stats, exclude personal information
     const sanitizedStats = {

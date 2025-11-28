@@ -272,8 +272,8 @@ export default function LevelPlayPage() {
               }}
             />
             <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
-              <span>Darkest</span>
-              <span>Lightest</span>
+              <span>Lowest RGB</span>
+              <span>Highest RGB</span>
             </div>
           </div>
         )}

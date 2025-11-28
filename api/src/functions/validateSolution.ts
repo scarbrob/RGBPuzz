@@ -93,7 +93,7 @@ export async function validateSolution(
       colors = generateLevelColors(difficulty, level);
     } else {
       // Daily challenge mode
-      const queryDate = request.query.get('date');
+      const queryDate = request.query?.get('date');
       const date = body.date || queryDate || new Date().toISOString().split('T')[0];
       
       // Validate date if provided

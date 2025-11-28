@@ -92,9 +92,10 @@ export async function updateDailyStatsHandler(request: any, context: any) {
     });
   } catch (error) {
     console.error('Error updating daily stats:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update daily stats';
     return addCorsHeaders({
       status: 500,
-      jsonBody: { error: 'Failed to update daily stats' },
+      jsonBody: { error: 'Failed to update daily stats', details: errorMessage },
     });
   }
 }

@@ -8,7 +8,7 @@
 
 export const msalConfig = {
   auth: {
-    clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || 'your-client-id',
+    clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || '7be679f2-3d5d-4d37-9bc8-a7457d3ab83f',
     authority: import.meta.env.VITE_AZURE_AD_AUTHORITY || 'https://rgbpuzz.ciamlogin.com/e13a9ac4-2458-47a7-8f8f-743e6fd1aeb5',
     knownAuthorities: ['rgbpuzz.ciamlogin.com'],
     redirectUri: import.meta.env.VITE_REDIRECT_URI || 'http://localhost:3000',
@@ -21,5 +21,5 @@ export const msalConfig = {
 };
 
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email'],
+  scopes: ['openid'],
 };

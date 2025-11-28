@@ -56,7 +56,7 @@ export default function StatsPage() {
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7071/api'
       const response = await fetch(
-        `${apiUrl}/user/stats?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&displayName=${encodeURIComponent(user.displayName || '')}`,
+        `${apiUrl}/user/stats?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`,
         {
           method: 'GET',
           headers: {

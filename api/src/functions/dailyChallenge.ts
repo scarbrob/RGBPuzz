@@ -29,7 +29,7 @@ export async function getDailyChallenge(
     }
 
     // Get date from query param or use server's current date
-    const queryDate = request.query.get('date');
+    const queryDate = request.query?.get('date');
     const today = queryDate || new Date().toISOString().split('T')[0];
     
     // Validate date if provided

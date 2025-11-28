@@ -27,8 +27,8 @@ export async function getLevel(
       return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
     }
 
-    const difficulty = request.query.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
-    const levelStr = request.query.get('level');
+    const difficulty = request.query?.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
+    const levelStr = request.query?.get('level');
     
     if (!difficulty || !levelStr) {
       return addCorsHeaders({

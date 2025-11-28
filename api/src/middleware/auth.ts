@@ -14,7 +14,6 @@ interface DecodedToken {
 export interface AuthUser {
   userId: string;
   email?: string;
-  displayName?: string;
 }
 
 // Cache for JWKS client to avoid recreating on every request
@@ -28,11 +27,11 @@ function getJwksClient(): jwksClient.JwksClient {
     return cachedJwksClient;
   }
 
-  const tenantName = process.env.ENTRA_TENANT_NAME || 'rgbpuzz';
-  const domain = process.env.ENTRA_DOMAIN || 'rgbpuzz.b2clogin.com';
-  const policy = process.env.ENTRA_POLICY || 'B2C_1_signupsignin';
+  const tenantId = process.env.ENTRA_TENANT_ID || 'e13a9ac4-2458-47a7-8f8f-743e6fd1aeb5';
+  const domain = process.env.ENTRA_DOMAIN || 'rgbpuzz.ciamlogin.com';
   
-  const jwksUri = `https://${domain}/${tenantName}.onmicrosoft.com/${policy}/discovery/v2.0/keys`;
+  // Entra External ID uses a different JWKS endpoint structure
+  const jwksUri = `https://${domain}/${tenantId}/discovery/v2.0/keys`;
 
   cachedJwksClient = jwksClient({
     jwksUri,
@@ -64,16 +63,16 @@ function getKey(header: any, callback: any) {
 export async function verifyToken(token: string): Promise<DecodedToken> {
   return new Promise((resolve, reject) => {
     const clientId = process.env.ENTRA_CLIENT_ID;
-    const tenantName = process.env.ENTRA_TENANT_NAME || 'rgbpuzz';
-    const domain = process.env.ENTRA_DOMAIN || 'rgbpuzz.b2clogin.com';
-    const policy = process.env.ENTRA_POLICY || 'B2C_1_signupsignin';
+    const tenantId = process.env.ENTRA_TENANT_ID || 'e13a9ac4-2458-47a7-8f8f-743e6fd1aeb5';
+    const domain = process.env.ENTRA_DOMAIN || 'rgbpuzz.ciamlogin.com';
 
     if (!clientId) {
       reject(new Error('ENTRA_CLIENT_ID not configured'));
       return;
     }
 
-    const issuer = `https://${domain}/${tenantName}.onmicrosoft.com/${policy}/v2.0/`;
+    // Entra External ID issuer format
+    const issuer = `https://${domain}/${tenantId}/v2.0`;
 
     jwt.verify(
       token,
@@ -143,14 +142,10 @@ export async function authenticateRequest(request: any): Promise<AuthUser | null
 
     // Extract email (multiple possible claim names)
     const email = decoded.emails?.[0] || decoded.email || decoded.preferred_username;
-    
-    // Extract display name
-    const displayName = decoded.name;
 
     return {
       userId,
       email,
-      displayName,
     };
   } catch (error) {
     throw new Error(`Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

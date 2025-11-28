@@ -27,11 +27,11 @@ export interface UpdateLevelStatsParams {
 /**
  * Initialize user stats (create user record if doesn't exist)
  */
-export async function initializeUserStats(userId: string, email: string, displayName?: string): Promise<void> {
+export async function initializeUserStats(userId: string, email: string): Promise<void> {
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${API_BASE_URL}/user/stats?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}&displayName=${encodeURIComponent(displayName || '')}`,
+      `${API_BASE_URL}/user/stats?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`,
       {
         method: 'GET',
         headers,

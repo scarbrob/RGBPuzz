@@ -8,7 +8,7 @@ export interface ValidationError {
 }
 
 /**
- * Validate userId format (alphanumeric, hyphen, underscore, max 128 chars)
+ * Validate userId format (alphanumeric, hyphen, underscore, period, max 128 chars)
  */
 export function validateUserId(userId: string): ValidationError | null {
   if (!userId || typeof userId !== 'string') {
@@ -19,7 +19,7 @@ export function validateUserId(userId: string): ValidationError | null {
     return { field: 'userId', message: 'userId too long (max 128 characters)' };
   }
   
-  if (!/^[a-zA-Z0-9_-]+$/.test(userId)) {
+  if (!/^[a-zA-Z0-9._-]+$/.test(userId)) {
     return { field: 'userId', message: 'userId contains invalid characters' };
   }
   

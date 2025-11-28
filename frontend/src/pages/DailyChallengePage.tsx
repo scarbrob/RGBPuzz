@@ -111,15 +111,11 @@ export default function DailyChallengePage() {
           encrypted: token.encrypted
         }));
         
-        setColors(decryptedColors);
         setMaxAttempts(data.maxAttempts);
         setChallengeDate(data.date);
         
-        // If user has already completed this challenge (from database), lock it
+        // If user has previous attempts from database, restore them
         if (dbAttempt) {
-          setAttempts(dbAttempt.attempts);
-          setStatsUpdated(true);
-          
           // Restore board state and attempt history if available
           // Decrypt the hex values from encrypted tokens
           const savedColors = dbAttempt.boardState 
@@ -143,22 +139,33 @@ export default function DailyChallengePage() {
             : [];
           
           setColors(savedColors);
+          setAttempts(dbAttempt.attempts);
           setAttemptHistory(savedHistory);
           
           if (dbAttempt.solved) {
             setGameState('won');
             setFeedback(`🎉 Solved in ${dbAttempt.attempts}/${data.maxAttempts}!`);
             setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
+            setStatsUpdated(true);
           } else if (dbAttempt.attempts >= data.maxAttempts) {
             setGameState('lost');
             setFeedback('😔 Out of attempts! Try again tomorrow.');
+            setStatsUpdated(true);
             // Show last attempt feedback
             if (savedHistory.length > 0) {
               const lastAttempt = savedHistory[savedHistory.length - 1];
               setCorrectPositions(lastAttempt.correctPositions || []);
               setIncorrectPositions(lastAttempt.incorrectPositions || []);
             }
+          } else if (savedHistory.length > 0) {
+            // Restore in-progress attempt feedback
+            const lastAttempt = savedHistory[savedHistory.length - 1];
+            setCorrectPositions(lastAttempt.correctPositions || []);
+            setIncorrectPositions(lastAttempt.incorrectPositions || []);
           }
+        } else {
+          // No previous attempts, set fresh challenge
+          setColors(decryptedColors);
         }
       } catch (error) {
         console.error('Error fetching daily challenge:', error);

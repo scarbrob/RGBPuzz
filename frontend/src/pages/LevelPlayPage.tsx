@@ -138,8 +138,6 @@ export default function LevelPlayPage() {
           encrypted: token.encrypted
         }))
         
-        setColors(decryptedColors)
-        
         // If user has previous attempts in the database, restore them
         if (dbAttempt) {
           // Restore board state and attempt history if available
@@ -179,6 +177,9 @@ export default function LevelPlayPage() {
             setCorrectPositions(lastAttempt.correctPositions || []);
             setIncorrectPositions(lastAttempt.incorrectPositions || []);
           }
+        } else {
+          // No previous attempts, set fresh level
+          setColors(decryptedColors);
         }
       } catch (error) {
         console.error('Error fetching level:', error)

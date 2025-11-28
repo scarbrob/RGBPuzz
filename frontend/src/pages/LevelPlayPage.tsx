@@ -4,6 +4,7 @@ import ColorBoard from '../components/ColorBoard'
 import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateLevelStats, getUserStats } from '../services/statsService'
+import { API_ENDPOINTS } from '../config/api'
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'insane'
 
@@ -47,7 +48,6 @@ export default function LevelPlayPage() {
       const currentTime = Date.now() - startTime
       if (currentTime > fastestTimeForDifficulty) {
         setTimingActive(false)
-        console.log('Stopped timing - exceeded fastest time')
       }
     }, 1000) // Check every second
 
@@ -93,7 +93,7 @@ export default function LevelPlayPage() {
       }
 
       try {
-        const response = await fetch(`https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/level?difficulty=${difficulty}&level=${level}`)
+        const response = await fetch(API_ENDPOINTS.getLevel(difficulty, parseInt(level)))
         if (!response.ok) throw new Error('Failed to fetch level')
         const data = await response.json()
         
@@ -126,7 +126,7 @@ export default function LevelPlayPage() {
     const orderedTokens = colors.map(c => c.id)
     
     try {
-      const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {
+      const response = await fetch(API_ENDPOINTS.validateSolution(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

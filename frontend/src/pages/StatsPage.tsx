@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import SignInModal from '../components/SignInModal'
+import { API_ENDPOINTS } from '../config/api'
 
 interface UserStats {
   // Daily Challenge Stats
@@ -54,9 +55,8 @@ export default function StatsPage() {
     
     setIsLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7071/api'
       const response = await fetch(
-        `${apiUrl}/user/stats?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`,
+        API_ENDPOINTS.getUserStats(user.id, user.email),
         {
           method: 'GET',
           headers: {

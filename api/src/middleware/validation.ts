@@ -2,6 +2,8 @@
  * Input validation and sanitization middleware
  */
 
+import { USER_ID_REGEX, EMAIL_REGEX } from '../constants';
+
 export interface ValidationError {
   field: string;
   message: string;
@@ -19,7 +21,7 @@ export function validateUserId(userId: string): ValidationError | null {
     return { field: 'userId', message: 'userId too long (max 128 characters)' };
   }
   
-  if (!/^[a-zA-Z0-9._-]+$/.test(userId)) {
+  if (!USER_ID_REGEX.test(userId)) {
     return { field: 'userId', message: 'userId contains invalid characters' };
   }
   
@@ -38,9 +40,7 @@ export function validateEmail(email: string): ValidationError | null {
     return { field: 'email', message: 'email too long' };
   }
   
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!EMAIL_REGEX.test(email)) {
     return { field: 'email', message: 'invalid email format' };
   }
   

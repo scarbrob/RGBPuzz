@@ -168,11 +168,8 @@ export async function initializeStatsTables(): Promise<void> {
 
     try {
       await client.createTable();
-      console.log(`Table ${tableName} created or already exists`);
     } catch (error: any) {
-      if (error.statusCode === 409) {
-        console.log(`Table ${tableName} already exists`);
-      } else {
+      if (error.statusCode !== 409) {
         throw error;
       }
     }

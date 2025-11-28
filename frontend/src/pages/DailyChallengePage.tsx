@@ -3,6 +3,7 @@ import ColorBoard from '../components/ColorBoard'
 import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateDailyStats } from '../services/statsService'
+import { API_ENDPOINTS } from '../config/api'
 
 export default function DailyChallengePage() {
   const { user } = useAuth()
@@ -72,7 +73,7 @@ export default function DailyChallengePage() {
       }
       
       try {
-        const response = await fetch(`https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/daily-challenge?date=${today}`);
+        const response = await fetch(API_ENDPOINTS.dailyChallenge(today));
         if (!response.ok) throw new Error('Failed to fetch challenge');
         const data = await response.json();
         
@@ -111,7 +112,7 @@ export default function DailyChallengePage() {
     const today = new Date().toISOString().split('T')[0];
     
     try {
-      const response = await fetch('https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api/validate-solution', {
+      const response = await fetch(API_ENDPOINTS.validateSolution(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

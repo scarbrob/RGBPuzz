@@ -3,6 +3,7 @@ import { generateDailySeed, generateColorsFromSeed, createColorToken, encryptHex
 import { validateDate } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
+import { DAILY_CHALLENGE_CONFIG } from '../constants';
 
 /**
  * GET /api/daily-challenge?date=YYYY-MM-DD
@@ -46,7 +47,7 @@ export async function getDailyChallenge(
     context.log('Generating challenge for date:', today);
     
     const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
-    const colorCount = 5; // Can be made configurable
+    const colorCount = DAILY_CHALLENGE_CONFIG.colorCount;
     
     // Generate deterministic colors for today
     const seed = generateDailySeed(today, salt);

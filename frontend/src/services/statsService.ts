@@ -4,8 +4,7 @@
  */
 
 import { createAuthHeaders } from '../utils/auth'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7071/api'
+import { API_ENDPOINTS } from '../config/api'
 
 export interface UpdateDailyStatsParams {
   userId: string
@@ -31,7 +30,7 @@ export async function initializeUserStats(userId: string, email: string): Promis
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${API_BASE_URL}/user/stats?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`,
+      API_ENDPOINTS.getUserStats(userId, email),
       {
         method: 'GET',
         headers,
@@ -58,7 +57,7 @@ export async function initializeUserStats(userId: string, email: string): Promis
 export async function updateDailyStats(params: UpdateDailyStatsParams): Promise<void> {
   try {
     const headers = await createAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/daily-stats`, {
+    const response = await fetch(API_ENDPOINTS.updateDailyStats(), {
       method: 'POST',
       headers,
       body: JSON.stringify(params),
@@ -79,7 +78,7 @@ export async function updateDailyStats(params: UpdateDailyStatsParams): Promise<
 export async function updateLevelStats(params: UpdateLevelStatsParams): Promise<void> {
   try {
     const headers = await createAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/level-stats`, {
+    const response = await fetch(API_ENDPOINTS.updateLevelStats(), {
       method: 'POST',
       headers,
       body: JSON.stringify(params),
@@ -111,7 +110,7 @@ export async function getLevelProgress(
 ): Promise<LevelProgress> {
   try {
     const headers = await createAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/level-progress?userId=${userId}&difficulty=${difficulty}`, {
+    const response = await fetch(API_ENDPOINTS.getLevelProgress(userId, difficulty), {
       method: 'GET',
       headers,
     })
@@ -134,7 +133,7 @@ export async function getUserStats(userId: string, email: string): Promise<any> 
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${API_BASE_URL}/user/stats?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`,
+      API_ENDPOINTS.getUserStats(userId, email),
       {
         method: 'GET',
         headers,

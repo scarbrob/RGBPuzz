@@ -131,7 +131,7 @@ export function generateLevelColors(difficulty: 'easy' | 'medium' | 'hard' | 'in
   
   // Use level as seed for deterministic start position
   const seed = createHash('md5').update(`level-${difficulty}-${level}`).digest();
-  const startValue = (seed[0] * 256 + seed[1]) % (maxRange - range);
+  const startValue = range < maxRange ? (seed[0] * 256 + seed[1]) % (maxRange - range) : 0;
   
   const colors: RGBColor[] = [];
   for (let i = 0; i < count; i++) {

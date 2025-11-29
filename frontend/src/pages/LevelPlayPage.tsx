@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ColorBoard from '../components/ColorBoard'
+import LoadingSkeleton from '../components/LoadingSkeleton'
 import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateLevelStats, getUserStats } from '../services/statsService'
@@ -13,6 +14,7 @@ export default function LevelPlayPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [attempts, setAttempts] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
@@ -79,7 +81,11 @@ export default function LevelPlayPage() {
 
   useEffect(() => {
     const fetchLevel = async () => {
-      if (!difficulty || !level) return
+      setIsLoading(true);
+      if (!difficulty || !level) {
+        setIsLoading(false);
+        return;
+      }
 
       if (user) {
         // Logged in: check database first
@@ -108,6 +114,7 @@ export default function LevelPlayPage() {
                 setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
               }
               
+              setIsLoading(false);
               return; // Don't fetch fresh level
             }
           }
@@ -138,6 +145,7 @@ export default function LevelPlayPage() {
             setCorrectPositions(lastAttempt.correctPositions || []);
             setIncorrectPositions(lastAttempt.incorrectPositions || []);
           }
+          setIsLoading(false);
           return;
         }
       }
@@ -165,6 +173,8 @@ export default function LevelPlayPage() {
         ]
         setColors(mockColors)
       }
+      
+      setIsLoading(false);
     }
     
     fetchLevel()
@@ -366,51 +376,55 @@ export default function LevelPlayPage() {
         )}
       </div>
 
-      {colors.length > 0 && (
-        <ColorBoard
-          colors={colors}
-          onOrderChange={(newOrder) => {
-            const reordered = newOrder.map(id => colors.find(c => c.id === id)!)
-            handleReorder(reordered)
-          }}
-          correctPositions={correctPositions}
-          incorrectPositions={incorrectPositions}
-        />
-      )}
+      {isLoading ? (
+        <LoadingSkeleton />
+      ) : colors.length > 0 ? (
+        <>
+          <ColorBoard
+            colors={colors}
+            onOrderChange={(newOrder) => {
+              const reordered = newOrder.map(id => colors.find(c => c.id === id)!)
+              handleReorder(reordered)
+            }}
+            correctPositions={correctPositions}
+            incorrectPositions={incorrectPositions}
+          />
 
-      <div className="mt-6 text-center">
-        {gameState === 'playing' && (
-          <button
-            onClick={handleSubmit}
-            className="game-button text-sm sm:text-base"
-          >
-            Submit
-          </button>
-        )}
+          <div className="mt-6 text-center">
+            {gameState === 'playing' && (
+              <button
+                onClick={handleSubmit}
+                className="game-button text-sm sm:text-base"
+              >
+                Submit
+              </button>
+            )}
 
-        {feedback && (
-          <div className="mt-4 text-lg sm:text-xl font-semibold text-light-text dark:text-dark-text">
-            {feedback}
+            {feedback && (
+              <div className="mt-4 text-lg sm:text-xl font-semibold text-light-text dark:text-dark-text">
+                {feedback}
+              </div>
+            )}
+
+            {gameState === 'won' && (
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <button
+                  onClick={handleNextLevel}
+                  className="game-button text-sm sm:text-base"
+                >
+                  Next Level →
+                </button>
+                <button
+                  onClick={handleBackToLevels}
+                  className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all text-sm sm:text-base"
+                >
+                  Level Select
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        {gameState === 'won' && (
-          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <button
-              onClick={handleNextLevel}
-              className="game-button text-sm sm:text-base"
-            >
-              Next Level →
-            </button>
-            <button
-              onClick={handleBackToLevels}
-              className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all text-sm sm:text-base"
-            >
-              Level Select
-            </button>
-          </div>
-        )}
-      </div>
+        </>
+      ) : null}
     </div>
   )
 }

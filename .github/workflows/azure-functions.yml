@@ -1,13 +1,13 @@
 name: Deploy Azure Functions
 
 on:
-  # Temporarily disabled - use manual deployment with 'func azure functionapp publish'
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'api/**'
-  #     - '.github/workflows/azure-functions.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'shared/**'
+      - '.github/workflows/azure-functions.yml'
   workflow_dispatch:
 
 env:

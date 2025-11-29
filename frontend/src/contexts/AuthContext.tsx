@@ -23,12 +23,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Initialize MSAL instance
 export let msalInstance: PublicClientApplication | null = null
+let msalInitPromise: Promise<PublicClientApplication> | null = null
 
 const initializeMsal = async () => {
-  if (!msalInstance) {
-    msalInstance = new PublicClientApplication(msalConfig)
-    await msalInstance.initialize()
+  if (msalInitPromise) {
+    return msalInitPromise
   }
+  
+  if (!msalInstance) {
+    msalInitPromise = (async () => {
+      msalInstance = new PublicClientApplication(msalConfig)
+      await msalInstance.initialize()
+      return msalInstance
+    })()
+    return msalInitPromise
+  }
+  
   return msalInstance
 }
 

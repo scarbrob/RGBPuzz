@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ColorBoard from '../components/ColorBoard'
+import LoadingSkeleton from '../components/LoadingSkeleton'
 import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateDailyStats } from '../services/statsService'
@@ -9,6 +10,7 @@ import { DAILY_CHALLENGE_CONFIG } from '../../../shared/src/constants'
 export default function DailyChallengePage() {
   const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [attempts, setAttempts] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState<number>(DAILY_CHALLENGE_CONFIG.maxAttempts)
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
@@ -60,6 +62,7 @@ export default function DailyChallengePage() {
   useEffect(() => {
     // Fetch daily challenge from API
     const fetchChallenge = async () => {
+      setIsLoading(true);
       const today = getLocalDate();
       
       if (user) {
@@ -115,6 +118,7 @@ export default function DailyChallengePage() {
                   setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
                 }
                 
+                setIsLoading(false);
                 return; // Don't fetch fresh challenge
             }
           }
@@ -146,6 +150,7 @@ export default function DailyChallengePage() {
             setCorrectPositions(lastAttempt.correctPositions || []);
             setIncorrectPositions(lastAttempt.incorrectPositions || []);
           }
+          setIsLoading(false);
           return;
         }
       }
@@ -192,6 +197,7 @@ export default function DailyChallengePage() {
         setColors(mockColors);
         setMaxAttempts(mockColors.length);
       }
+      setIsLoading(false);
     };
     
     fetchChallenge();
@@ -425,29 +431,35 @@ export default function DailyChallengePage() {
           </div>
         )}
 
-        <ColorBoard 
-          colors={colors}
-          correctPositions={correctPositions}
-          incorrectPositions={incorrectPositions}
-          locked={gameState !== 'playing'}
-          onOrderChange={(newOrder) => {
-            if (gameState !== 'playing') return;
-            const reordered = newOrder.map(id => colors.find(c => c.id === id)!);
-            setColors(reordered);
-            setCorrectPositions([]); // Clear highlights when user reorders
-            setIncorrectPositions([]); // Clear incorrect markers too
-          }}
-        />
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : (
+          <>
+            <ColorBoard 
+              colors={colors}
+              correctPositions={correctPositions}
+              incorrectPositions={incorrectPositions}
+              locked={gameState !== 'playing'}
+              onOrderChange={(newOrder) => {
+                if (gameState !== 'playing') return;
+                const reordered = newOrder.map(id => colors.find(c => c.id === id)!);
+                setColors(reordered);
+                setCorrectPositions([]); // Clear highlights when user reorders
+                setIncorrectPositions([]); // Clear incorrect markers too
+              }}
+            />
 
-        <div className="mt-6 sm:mt-8 flex justify-center">
-          <button 
-            className="game-button w-full max-w-md text-base sm:text-lg py-3 sm:py-4"
-            onClick={handleSubmit}
-            disabled={gameState !== 'playing'}
-          >
-            {gameState === 'won' ? 'Solved! ✓' : 'Submit Answer'}
-          </button>
-        </div>
+            <div className="mt-6 sm:mt-8 flex justify-center">
+              <button 
+                className="game-button w-full max-w-md text-base sm:text-lg py-3 sm:py-4"
+                onClick={handleSubmit}
+                disabled={gameState !== 'playing'}
+              >
+                {gameState === 'won' ? 'Solved! ✓' : 'Submit Answer'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {gameState !== 'playing' && (

@@ -390,68 +390,59 @@ export async function updateLevelStats(
     throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
   }
 
-  // Record the level attempt
+  // Record the level attempt - consolidated per user
   const attemptsClient = TableClient.fromConnectionString(connectionString, 'LevelAttempts');
 
-  const rowKey = `${userId}-${difficulty}-${level}`;
-  let levelAttempt: LevelAttemptEntity;
+  const rowKey = userId;
+  let userLevels: any;
   let isNewLevel = false;
   let wasAlreadySolved = false;
 
   try {
-    levelAttempt = await attemptsClient.getEntity<LevelAttemptEntity>('level-attempts', rowKey);
-    
-    // Existing level - track if it was already solved
-    wasAlreadySolved = levelAttempt.solved;
-    
-    // Update existing attempt
-    levelAttempt.attempts = attempts;
-    levelAttempt.lastAttemptDate = new Date();
-    
-    if (solved && !levelAttempt.solved) {
-      // First time solving
-      levelAttempt.solved = true;
-      levelAttempt.solvedDate = new Date();
-    }
-    
-    if (solveTime && (!levelAttempt.bestTime || solveTime < levelAttempt.bestTime)) {
-      levelAttempt.bestTime = solveTime;
-    }
-    
-    // Update board state
-    if (boardState) {
-      levelAttempt.boardState = JSON.stringify(boardState);
-    }
-    if (attemptHistory) {
-      levelAttempt.attemptHistory = JSON.stringify(attemptHistory);
-    }
-    
-    await attemptsClient.updateEntity(levelAttempt, 'Replace');
+    const entity = await attemptsClient.getEntity('level-attempts', rowKey);
+    userLevels = entity.levels ? JSON.parse(entity.levels as string) : {};
   } catch (error: any) {
     if (error.statusCode === 404) {
-      // Create new level attempt
-      isNewLevel = true;
-      levelAttempt = {
-        partitionKey: 'level-attempts',
-        rowKey,
-        userId,
-        difficulty,
-        level,
-        attempts,
-        solved,
-        bestTime: solveTime,
-        firstAttemptDate: new Date(),
-        lastAttemptDate: new Date(),
-        solvedDate: solved ? new Date() : undefined,
-        boardState: boardState ? JSON.stringify(boardState) : undefined,
-        attemptHistory: attemptHistory ? JSON.stringify(attemptHistory) : undefined,
-      };
-      
-      await attemptsClient.createEntity(levelAttempt);
+      userLevels = {};
     } else {
       throw error;
     }
   }
+
+  // Track state changes
+  const levelKey = `${difficulty}-${level}`;
+  const existingLevel = userLevels[levelKey];
+  
+  if (!existingLevel) {
+    isNewLevel = true;
+  } else {
+    wasAlreadySolved = existingLevel.solved;
+  }
+
+  // Update or create level attempt
+  userLevels[levelKey] = {
+    difficulty,
+    level,
+    attempts,
+    solved: solved || (existingLevel?.solved || false),
+    bestTime: solveTime && (!existingLevel?.bestTime || solveTime < existingLevel.bestTime) 
+      ? solveTime 
+      : existingLevel?.bestTime,
+    firstAttemptDate: existingLevel?.firstAttemptDate || new Date().toISOString(),
+    lastAttemptDate: new Date().toISOString(),
+    solvedDate: solved && !existingLevel?.solved ? new Date().toISOString() : existingLevel?.solvedDate,
+    boardState,
+    attemptHistory,
+  };
+
+  // Save consolidated entity
+  await attemptsClient.upsertEntity({
+    partitionKey: 'level-attempts',
+    rowKey,
+    userId,
+    levels: JSON.stringify(userLevels),
+    lastUpdated: new Date(),
+  }, 'Replace');
 
   // Update user stats
   const statsClient = getStatsTableClient();
@@ -497,11 +488,12 @@ export async function updateLevelStats(
   }
 
   // Update difficulty-specific fastest solve time (based on the level's best time when solved)
-  if (solved && levelAttempt.bestTime) {
+  const currentLevelBestTime = userLevels[levelKey]?.bestTime;
+  if (solved && currentLevelBestTime) {
     const difficultyFastestKey = `${difficulty}FastestTime` as keyof UserStatsEntity;
     const currentFastest = stats[difficultyFastestKey] as number | undefined;
-    if (!currentFastest || levelAttempt.bestTime < currentFastest) {
-      (stats as any)[difficultyFastestKey] = levelAttempt.bestTime;
+    if (!currentFastest || currentLevelBestTime < currentFastest) {
+      (stats as any)[difficultyFastestKey] = currentLevelBestTime;
     }
   }
 
@@ -520,31 +512,50 @@ export async function getUserLevelProgress(
     throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
   }
 
-  // Validate inputs to prevent injection
+  // Validate inputs
   const validDifficulties = ['easy', 'medium', 'hard', 'insane'];
   if (!validDifficulties.includes(difficulty)) {
     throw new Error('Invalid difficulty level');
   }
   
-  // Sanitize userId (Azure Table Storage row keys can contain alphanumeric, hyphen, underscore, period)
   if (!/^[a-zA-Z0-9._-]+$/.test(userId)) {
     throw new Error('Invalid userId format');
   }
 
   const client = TableClient.fromConnectionString(connectionString, 'LevelAttempts');
 
-  // Use safe filter construction - escape single quotes in userId
-  const escapedUserId = userId.replace(/'/g, "''");
-  const entities = client.listEntities<LevelAttemptEntity>({
-    queryOptions: {
-      filter: `PartitionKey eq 'level-attempts' and userId eq '${escapedUserId}' and difficulty eq '${difficulty}'`,
-    },
-  });
-
-  const progress: LevelAttemptEntity[] = [];
-  for await (const entity of entities) {
-    progress.push(entity);
+  try {
+    const entity = await client.getEntity('level-attempts', userId);
+    const userLevels = entity.levels ? JSON.parse(entity.levels as string) : {};
+    
+    // Filter and convert to array for this difficulty
+    const progress: LevelAttemptEntity[] = [];
+    for (const [key, levelData] of Object.entries(userLevels)) {
+      const level = levelData as any;
+      if (level.difficulty === difficulty) {
+        progress.push({
+          partitionKey: 'level-attempts',
+          rowKey: `${userId}-${level.difficulty}-${level.level}`,
+          userId,
+          difficulty: level.difficulty,
+          level: level.level,
+          attempts: level.attempts,
+          solved: level.solved,
+          bestTime: level.bestTime,
+          firstAttemptDate: new Date(level.firstAttemptDate),
+          lastAttemptDate: new Date(level.lastAttemptDate),
+          solvedDate: level.solvedDate ? new Date(level.solvedDate) : undefined,
+          boardState: level.boardState ? JSON.stringify(level.boardState) : undefined,
+          attemptHistory: level.attemptHistory ? JSON.stringify(level.attemptHistory) : undefined,
+        });
+      }
+    }
+    
+    return progress;
+  } catch (error: any) {
+    if (error.statusCode === 404) {
+      return [];
+    }
+    throw error;
   }
-
-  return progress;
 }

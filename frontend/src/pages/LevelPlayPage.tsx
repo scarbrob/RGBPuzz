@@ -96,26 +96,35 @@ export default function LevelPlayPage() {
             // Find this specific level in the progress data
             const dbAttempt = progressData.find((p: any) => p.level === parseInt(level));
             
-            // Only restore if we have boardState (in-progress or completed)
+            // Only restore if we have boardState with valid encrypted tokens
             if (dbAttempt && dbAttempt.boardState) {
-              const decryptedColors = dbAttempt.boardState.map((token: any) => ({
-                id: token.id,
-                hex: decryptHex(token.encrypted, token.id),
-                encrypted: token.encrypted
-              }));
+              // Check if we have valid encrypted tokens
+              const hasValidEncryption = dbAttempt.boardState.some((token: any) => 
+                token.encrypted && token.encrypted.length > 0
+              );
               
-              setColors(decryptedColors);
-              setAttempts(dbAttempt.attempts || 0);
-              setGameState(dbAttempt.solved ? 'won' : 'playing');
-              setStatsUpdated(dbAttempt.solved);
-              
-              // If the level is complete, show all correct
-              if (dbAttempt.solved) {
-                setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
+              if (hasValidEncryption) {
+                const decryptedColors = dbAttempt.boardState.map((token: any) => ({
+                  id: token.id,
+                  hex: decryptHex(token.encrypted, token.id),
+                  encrypted: token.encrypted
+                }));
+                
+                setColors(decryptedColors);
+                setAttempts(dbAttempt.attempts || 0);
+                setGameState(dbAttempt.solved ? 'won' : 'playing');
+                setStatsUpdated(dbAttempt.solved);
+                
+                // If the level is complete, show all correct
+                if (dbAttempt.solved) {
+                  setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
+                }
+                
+                setIsLoading(false);
+                return; // Don't fetch fresh level
               }
-              
-              setIsLoading(false);
-              return; // Don't fetch fresh level
+              // If we have dbAttempt but no valid encryption, restore attempt count but fetch fresh level
+              setAttempts(dbAttempt.attempts || 0);
             }
           }
         } catch (error) {
@@ -267,13 +276,16 @@ export default function LevelPlayPage() {
         
         // Save in-progress attempts for authenticated users
         if (user && difficulty && level) {
+          // Only save boardState if we have valid encrypted tokens
+          const hasValidEncryption = colors.some(c => c.encrypted && c.encrypted.length > 0);
+          
           updateLevelStats({
             userId: user.id,
             difficulty,
             level: parseInt(level),
             attempts: attempts + 1,
             solved: false,
-            boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            boardState: hasValidEncryption ? colors.map(c => ({ id: c.id, encrypted: c.encrypted })) : undefined,
             attemptHistory: newHistory.map(h => ({
               colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
               correctPositions: h.correctPositions,

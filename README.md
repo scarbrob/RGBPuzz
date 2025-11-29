@@ -20,10 +20,11 @@
 - 🗓️ **Daily Challenge** - New puzzle every day at midnight UTC
 - 🎯 **Limited Attempts** - 5 tries to get it right
 - 🔒 **Hidden Values** - RGB numbers never exposed (even in network requests!)
-- 📊 **Level Mode** - 50+ progressive levels with themes
+- 📊 **Level Mode** - 400 progressive levels across 4 difficulties
 - 📈 **Stats Tracking** - Streaks, win rates, and achievements
 - 🔗 **Social Sharing** - Share results like Wordle
 - 🎨 **Drag & Drop** - Intuitive touch/mouse interface
+- ⚡ **Loading Skeleton** - Smooth UX during cold starts
 
 ### Why It's Unique
 
@@ -41,10 +42,10 @@
 
 **Frontend**
 - React 18 + TypeScript
-- Vite (build tool)
+- Vite 7.2.4 (build tool, includes esbuild 0.25.12)
 - Tailwind CSS (styling)
 - dnd-kit (drag & drop)
-- React Router (navigation)
+- React Router 6 (navigation, v7-ready)
 
 **Backend**
 - Azure Functions (serverless)
@@ -63,8 +64,9 @@
 - Mock mode for development
 
 **Hosting**
-- Azure Static Web Apps (frontend) - Ready to deploy
-- Azure Functions (API) - **Deployed at rgbpuzz.com**
+- Azure Static Web Apps (frontend) - **Deployed at rgbpuzz.com**
+- Azure Functions (API) - **Deployed at rgbpuzz.com/api**
+- Flex Consumption Plan (serverless)
 - Est. Cost: $10-30/month
 
 ### Security Feature 🔒
@@ -184,17 +186,22 @@ npm run start
 - ✅ Frontend connected to API with real-time validation
 - ✅ Authentication (Microsoft + Google via Azure B2C)
 - ✅ Statistics tracking (streaks, fastest times, progress)
-- ✅ API deployed to Azure Functions
+- ✅ API deployed to Azure Functions (Flex Consumption)
+- ✅ Frontend deployed to Azure Static Web Apps
+- ✅ Loading skeleton UI for better cold start UX
 - ✅ Responsive UI with dark/light themes
 - ✅ Session persistence (authenticated + local)
 - ✅ Privacy Policy & Terms of Service
 - ✅ Share functionality (Wordle-style results)
+- ✅ Security: esbuild 0.25.12, React Router v7-ready, MSAL race condition fixed
+- ✅ SEO: Comprehensive meta tags, sitemap, robots.txt
 
-**Ready for Launch:**
-- 🚀 Backend: **Deployed** at rgbpuzz-api.azurewebsites.net
-- 🚀 Frontend: Ready for deployment to **rgbpuzz.com**
-- 🚀 Database: Azure Table Storage configured
-- 🚀 Auth: Microsoft Entra External ID ready
+**Production Ready:**
+- ✅ Backend: **Deployed** at https://rgbpuzz.com/api
+- ✅ Frontend: **Deployed** at https://rgbpuzz.com
+- ✅ Database: Azure Table Storage (UserStats, DailyAttempts, LevelAttempts)
+- ✅ Auth: Microsoft Entra External ID (Azure B2C)
+- ✅ CI/CD: GitHub Actions for automated deployment
 
 **Next Steps:**
 - Deploy frontend to production (Azure Static Web Apps)

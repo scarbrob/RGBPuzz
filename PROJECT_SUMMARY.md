@@ -77,12 +77,13 @@ c:\Repos\rgbpuzz\
 └── documentation files
 ```
 
-## 📊 Current Status: Production Ready! 🚀
+## 📊 Current Status: Fully Deployed! 🚀
 
 ### ✅ Completed - All Core Features
 - ✅ Full React frontend with routing (7 pages)
 - ✅ Drag & drop color sorting interface (dnd-kit)
-- ✅ **Azure Functions API deployed** at rgbpuzz.com:
+- ✅ **Frontend deployed** at https://rgbpuzz.com
+- ✅ **Azure Functions API deployed** at https://rgbpuzz.com/api:
   - `GET /api/daily-challenge` - Daily puzzle
   - `POST /api/validate-solution` - Validation with feedback
   - `GET /api/level` - 400 levels (Easy/Medium/Hard/Insane)

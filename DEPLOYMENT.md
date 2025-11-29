@@ -63,6 +63,8 @@ func azure functionapp publish rgbpuzz-api
 az functionapp show --name rgbpuzz-api --resource-group <your-rg>
 ```
 
+**Note**: The Flex Consumption plan doesn't support publish profiles. Use service principal authentication for GitHub Actions deployment, or deploy manually with `func azure functionapp publish`.
+
 ### 3. Configure Backend Environment Variables
 
 ```powershell

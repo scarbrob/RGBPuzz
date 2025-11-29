@@ -89,7 +89,7 @@ export default function Header() {
                 </button>
                 
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-light-surface dark:bg-dark-surface shadow-lg border border-light-border/30 dark:border-dark-border/30 z-50">
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-light-surface dark:bg-dark-surface shadow-lg border border-light-border/30 dark:border-dark-border/30 z-50 animate-slide-in origin-top">
                     {user ? (
                       <>
                         <div className="px-4 py-3 text-sm text-light-text-secondary dark:text-dark-text-secondary border-b border-light-border/30 dark:border-dark-border/30 rounded-t-lg">

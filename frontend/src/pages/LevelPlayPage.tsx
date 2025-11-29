@@ -16,6 +16,7 @@ export default function LevelPlayPage() {
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [attempts, setAttempts] = useState(0)
+  const [initialAttempts, setInitialAttempts] = useState(0) // Track initial attempts for delta calculation
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
@@ -23,6 +24,8 @@ export default function LevelPlayPage() {
   const [startTime] = useState<number>(Date.now())
   const [statsUpdated, setStatsUpdated] = useState(false)
   const [showHint, setShowHint] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [tutorialFadingOut, setTutorialFadingOut] = useState(false)
   const [fastestTimeForDifficulty, setFastestTimeForDifficulty] = useState<number | undefined>(undefined)
   const [timingActive, setTimingActive] = useState(true)
   const [attemptHistory, setAttemptHistory] = useState<Array<{
@@ -30,6 +33,30 @@ export default function LevelPlayPage() {
     correctPositions: number[];
     incorrectPositions: number[];
   }>>([])
+
+  // Check tutorial status on mount and listen for changes
+  useEffect(() => {
+    const checkTutorial = () => {
+      const tutorialSeen = localStorage.getItem('rgbpuzz-tutorial-seen');
+      setShowTutorial(!tutorialSeen);
+      setTutorialFadingOut(false);
+    };
+    
+    checkTutorial();
+    
+    const handleStorageEvent = () => {
+      // Start fade out animation
+      setTutorialFadingOut(true);
+      setShowTutorial(false);
+      // Reset fade state after animation completes
+      setTimeout(() => {
+        setTutorialFadingOut(false);
+      }, 800);
+    };
+    
+    window.addEventListener('storage', handleStorageEvent);
+    return () => window.removeEventListener('storage', handleStorageEvent);
+  }, []);
 
   // Fetch user's fastest time for this difficulty
   useEffect(() => {
@@ -96,6 +123,27 @@ export default function LevelPlayPage() {
             // Find this specific level in the progress data
             const dbAttempt = progressData.find((p: any) => p.level === parseInt(level));
             
+            // Always restore attempts count if we have a record
+            if (dbAttempt) {
+              const savedAttempts = dbAttempt.attempts || 0;
+              setAttempts(savedAttempts);
+              setInitialAttempts(savedAttempts); // Track initial value for delta
+              
+              // Restore attempt history if available
+              if (dbAttempt.attemptHistory && dbAttempt.attemptHistory.length > 0) {
+                const decryptedHistory = dbAttempt.attemptHistory.map((attempt: any) => ({
+                  colors: attempt.colors.map((token: any) => ({
+                    id: token.id,
+                    hex: decryptHex(token.encrypted, token.id),
+                    encrypted: token.encrypted
+                  })),
+                  correctPositions: attempt.correctPositions,
+                  incorrectPositions: attempt.incorrectPositions
+                }));
+                setAttemptHistory(decryptedHistory);
+              }
+            }
+            
             // Only restore if we have boardState with valid encrypted tokens
             if (dbAttempt && dbAttempt.boardState) {
               // Check if we have valid encrypted tokens
@@ -111,20 +159,23 @@ export default function LevelPlayPage() {
                 }));
                 
                 setColors(decryptedColors);
-                setAttempts(dbAttempt.attempts || 0);
                 setGameState(dbAttempt.solved ? 'won' : 'playing');
                 setStatsUpdated(dbAttempt.solved);
+                setTimingActive(false); // Disable timing for restored games
                 
                 // If the level is complete, show all correct
                 if (dbAttempt.solved) {
                   setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
+                } else if (dbAttempt.attemptHistory && dbAttempt.attemptHistory.length > 0) {
+                  // Restore feedback from last attempt if still playing
+                  const lastAttempt = dbAttempt.attemptHistory[dbAttempt.attemptHistory.length - 1];
+                  setCorrectPositions(lastAttempt.correctPositions || []);
+                  setIncorrectPositions(lastAttempt.incorrectPositions || []);
                 }
                 
                 setIsLoading(false);
                 return; // Don't fetch fresh level
               }
-              // If we have dbAttempt but no valid encryption, restore attempt count but fetch fresh level
-              setAttempts(dbAttempt.attempts || 0);
             }
           }
         } catch (error) {
@@ -148,8 +199,10 @@ export default function LevelPlayPage() {
           
           setColors(decryptedColors);
           setAttempts(parsed.attempts);
+          setInitialAttempts(parsed.attempts); // Track initial value for delta
           setGameState(parsed.gameState);
           setFeedback(parsed.feedback);
+          setTimingActive(false); // Disable timing for restored games
           
           // Decrypt attempt history colors if present
           if (parsed.attemptHistory) {
@@ -259,11 +312,13 @@ export default function LevelPlayPage() {
         // Update stats for authenticated users
         if (user && difficulty && level && !statsUpdated) {
           const solveTime = timingActive ? Date.now() - startTime : undefined;
+          const currentAttempts = attempts + 1;
+          const attemptsThisSession = currentAttempts - initialAttempts; // Only send new attempts
           updateLevelStats({
             userId: user.id,
             difficulty,
             level: parseInt(level),
-            attempts: attempts + 1,
+            attempts: attemptsThisSession,
             solved: true,
             solveTime,
             boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
@@ -300,12 +355,14 @@ export default function LevelPlayPage() {
         if (user && difficulty && level) {
           // Only save boardState if we have valid encrypted tokens
           const hasValidEncryption = colors.some(c => c.encrypted && c.encrypted.length > 0);
+          const currentAttempts = attempts + 1;
+          const attemptsThisSession = currentAttempts - initialAttempts; // Only send new attempts
           
           updateLevelStats({
             userId: user.id,
             difficulty,
             level: parseInt(level),
-            attempts: attempts + 1,
+            attempts: attemptsThisSession,
             solved: false,
             boardState: hasValidEncryption ? colors.map(c => ({ id: c.id, encrypted: c.encrypted })) : undefined,
             attemptHistory: newHistory.map(h => ({
@@ -391,7 +448,7 @@ export default function LevelPlayPage() {
       </div>
 
       {/* Color Spectrum Hint */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-6 sm:mb-8" style={{ transition: 'all 1s ease-out' }}>
         <button
           onClick={() => setShowHint(!showHint)}
           className="w-full text-center text-xs sm:text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
@@ -412,12 +469,37 @@ export default function LevelPlayPage() {
             </div>
           </div>
         )}
+        
+        {/* Tutorial hint for first-time users */}
+        {(showTutorial || tutorialFadingOut) && (
+          <div 
+            className="mt-3 flex justify-center overflow-hidden"
+            style={{
+              transition: 'max-height 0.8s ease-in-out, opacity 0.8s ease-in-out, margin 0.8s ease-in-out',
+              maxHeight: tutorialFadingOut ? '0px' : '200px',
+              opacity: tutorialFadingOut ? 0 : 1,
+              marginTop: tutorialFadingOut ? '0px' : '0.75rem'
+            }}
+          >
+            <div 
+              className="px-4 py-3 bg-light-accent/10 dark:bg-dark-accent/10 border border-light-accent/30 dark:border-dark-accent/30 rounded-xl"
+              style={{
+                transition: 'transform 0.8s ease-in-out',
+                transform: tutorialFadingOut ? 'scale(0.95)' : 'scale(1)'
+              }}
+            >
+              <p className="text-center text-sm sm:text-base text-light-text-primary dark:text-dark-text-primary font-semibold">
+                👆 <span className="text-light-accent dark:text-dark-accent">Drag and drop</span> the tiles below to reorder them!
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
         <LoadingSkeleton />
       ) : colors.length > 0 ? (
-        <>
+        <div>
           <ColorBoard
             colors={colors}
             onOrderChange={(newOrder) => {
@@ -434,8 +516,13 @@ export default function LevelPlayPage() {
                 onClick={handleSubmit}
                 className="game-button text-sm sm:text-base"
               >
-                Submit
+                Submit Answer
               </button>
+            )}
+            {gameState === 'won' && (
+              <div className="animate-pulse-thrice text-green-600 dark:text-green-400 font-bold text-lg sm:text-xl">
+                ✓ Solved!
+              </div>
             )}
 
             {feedback && (
@@ -461,7 +548,7 @@ export default function LevelPlayPage() {
               </div>
             )}
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   )

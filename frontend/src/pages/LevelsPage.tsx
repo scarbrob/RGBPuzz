@@ -162,10 +162,10 @@ export default function LevelsPage() {
             <button
               key={difficulty}
               onClick={() => setSelectedDifficulty(difficulty)}
-              className={`p-4 sm:p-6 rounded-2xl transition-all ${
+              className={`p-4 sm:p-6 rounded-2xl transition-all duration-300 ${
                 isSelected
-                  ? 'bg-light-accent dark:bg-dark-accent text-white scale-105'
-                  : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30'
+                  ? 'bg-light-accent dark:bg-dark-accent text-white scale-105 shadow-lg'
+                  : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-105'
               }`}
             >
               <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{config.emoji}</div>
@@ -188,8 +188,8 @@ export default function LevelsPage() {
               level.locked
                 ? 'bg-light-surface/10 dark:bg-dark-surface/10 opacity-40 cursor-not-allowed'
                 : level.completed
-                ? 'bg-light-accent/20 dark:bg-dark-accent/20 hover:bg-light-accent/30 dark:hover:bg-dark-accent/30 hover:scale-110'
-                : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-110'
+                ? 'bg-light-accent/20 dark:bg-dark-accent/20 hover:bg-light-accent/30 dark:hover:bg-dark-accent/30 hover:scale-110 hover:shadow-lg'
+                : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-110 hover:-rotate-3 hover:border-2 hover:border-light-accent dark:hover:border-dark-accent'
             }`}
           >
             {level.locked && (
@@ -201,7 +201,7 @@ export default function LevelsPage() {
               {level.level}
             </div>
             {level.completed && (
-              <div className="text-base sm:text-lg md:text-xl mt-0.5 sm:mt-1 text-green-500">✓</div>
+              <div className="text-base sm:text-lg md:text-xl mt-0.5 sm:mt-1 text-green-500 animate-bounce-once">✓</div>
             )}
           </button>
         ))}

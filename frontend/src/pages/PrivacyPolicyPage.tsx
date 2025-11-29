@@ -39,14 +39,16 @@ export default function PrivacyPolicyPage() {
               2.1 Authentication Data
             </h3>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
-              We use <strong>Azure Active Directory B2C OAuth</strong> for authentication. When you sign in:
+              We use <strong>Microsoft Entra External ID (OAuth)</strong> for authentication. When you sign in:
             </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>We receive a <strong>unique user ID</strong> (random identifier) from Azure B2C</li>
-              <li>We <strong>DO NOT</strong> receive your email address</li>
-              <li>We <strong>DO NOT</strong> receive your real name</li>
-              <li>We <strong>DO NOT</strong> receive any personal information</li>
-              <li>The display name shown is your <strong>Azure B2C account name</strong>, which you control</li>
+              <li>Your <strong>email address</strong> is stored by the identity provider (Microsoft Entra) for authentication purposes</li>
+              <li>We receive a <strong>unique user ID</strong> (random identifier) from your identity provider to link your game data</li>
+              <li>We receive a <strong>display name</strong>, which is used solely to identify your account in the header of the application</li>
+              <li><strong>Important:</strong> OAuth providers (Google, Microsoft, etc.) may automatically populate your display name with your real name from their systems. You are responsible for reviewing and changing this display name if you do not wish to use your real name. We are not responsible for the information you choose to submit.</li>
+              <li>You can change your display name at any time through your identity provider's account settings</li>
+              <li>We <strong>do not</strong> receive your password or any credentials</li>
+              <li>We <strong>do not</strong> have access to your social media profiles, contacts, or any other data from your identity provider</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2 mt-4">

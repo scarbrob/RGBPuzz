@@ -18,6 +18,8 @@ export default function DailyChallengePage() {
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
   const [incorrectPositions, setIncorrectPositions] = useState<number[]>([])
   const [showHint, setShowHint] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [tutorialFadingOut, setTutorialFadingOut] = useState(false)
   
   // Get today's date in local timezone consistently
   const getLocalDate = () => {
@@ -34,6 +36,31 @@ export default function DailyChallengePage() {
     incorrectPositions: number[];
   }>>([])
   const [statsUpdated, setStatsUpdated] = useState(false)
+
+  // Check tutorial status on mount and listen for changes
+  useEffect(() => {
+    const checkTutorial = () => {
+      const tutorialSeen = localStorage.getItem('rgbpuzz-tutorial-seen');
+      setShowTutorial(!tutorialSeen);
+      setTutorialFadingOut(false);
+    };
+    
+    checkTutorial();
+    
+    const handleStorageEvent = () => {
+      // Start fade out animation
+      setTutorialFadingOut(true);
+      setShowTutorial(false);
+      // Reset fade state after animation completes
+      setTimeout(() => {
+        setTutorialFadingOut(false);
+      }, 800);
+    };
+    
+    window.addEventListener('storage', handleStorageEvent);
+    return () => window.removeEventListener('storage', handleStorageEvent);
+  }, []);
+
   const resetPuzzle = () => {
     const today = getLocalDate();
     sessionStorage.removeItem(`rgbpuzz-${today}`);
@@ -425,15 +452,15 @@ export default function DailyChallengePage() {
         </div>
 
         {/* Color Spectrum Hint */}
-        <div className="mb-8">
+        <div className="mb-8" style={{ transition: 'all 1s ease-out' }}>
           <button
             onClick={() => setShowHint(!showHint)}
-            className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
+            className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-2 transition-opacity font-bold"
           >
             💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
           </button>
           {showHint && (
-            <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
+            <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in mb-3">
               <div 
                 className="absolute inset-0"
                 style={{
@@ -446,11 +473,36 @@ export default function DailyChallengePage() {
               </div>
             </div>
           )}
+          
+          {/* Tutorial hint for first-time users */}
+          {(showTutorial || tutorialFadingOut) && (
+            <div 
+              className="mt-3 flex justify-center overflow-hidden"
+              style={{
+                transition: 'max-height 0.8s ease-in-out, opacity 0.8s ease-in-out, margin 0.8s ease-in-out',
+                maxHeight: tutorialFadingOut ? '0px' : '200px',
+                opacity: tutorialFadingOut ? 0 : 1,
+                marginTop: tutorialFadingOut ? '0px' : '0.75rem'
+              }}
+            >
+              <div 
+                className="px-4 py-3 bg-light-accent/10 dark:bg-dark-accent/10 border border-light-accent/30 dark:border-dark-accent/30 rounded-xl"
+                style={{
+                  transition: 'transform 0.8s ease-in-out',
+                  transform: tutorialFadingOut ? 'scale(0.95)' : 'scale(1)'
+                }}
+              >
+                <p className="text-center text-sm sm:text-base text-light-text-primary dark:text-dark-text-primary font-semibold">
+                  👆 <span className="text-light-accent dark:text-dark-accent">Drag and drop</span> the tiles below to reorder them!
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {feedback && gameState !== 'playing' && (
           <div className={`mb-6 p-4 rounded-xl text-center font-medium animate-slide-in ${
-            gameState === 'won' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/50' :
+            gameState === 'won' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/50 animate-pulse-thrice' :
             'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/50'
           }`}>
             {feedback}
@@ -460,7 +512,7 @@ export default function DailyChallengePage() {
         {isLoading ? (
           <LoadingSkeleton />
         ) : (
-          <>
+          <div>
             <ColorBoard 
               colors={colors}
               correctPositions={correctPositions}
@@ -484,7 +536,7 @@ export default function DailyChallengePage() {
                 {gameState === 'won' ? 'Solved! ✓' : 'Submit Answer'}
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
 

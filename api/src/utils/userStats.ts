@@ -423,7 +423,7 @@ export async function updateLevelStats(
   userLevels[levelKey] = {
     difficulty,
     level,
-    attempts,
+    attempts: (existingLevel?.attempts || 0) + attempts, // Add delta to existing attempts
     solved: solved || (existingLevel?.solved || false),
     bestTime: solveTime && (!existingLevel?.bestTime || solveTime < existingLevel.bestTime) 
       ? solveTime 

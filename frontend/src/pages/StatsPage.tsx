@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import SignInModal from '../components/SignInModal'
+import AnimatedNumber from '../components/AnimatedNumber'
 import { API_ENDPOINTS } from '../config/api'
 
 interface UserStats {
@@ -105,13 +106,6 @@ export default function StatsPage() {
     }
   }
 
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`
-  }
-
   if (!user) {
     return (
       <>
@@ -161,21 +155,21 @@ export default function StatsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-orange-500/30">
             <div className="text-3xl sm:text-4xl font-bold text-orange-500 mb-1 sm:mb-2">
-              🔥 {stats.dailyStreak}
+              🔥 <AnimatedNumber value={stats.dailyStreak} />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Current Streak</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-yellow-500/30">
             <div className="text-3xl sm:text-4xl font-bold text-yellow-500 mb-1 sm:mb-2">
-              ⭐ {stats.longestStreak}
+              ⭐ <AnimatedNumber value={stats.longestStreak} />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Longest Streak</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-green-500/30">
             <div className="text-3xl sm:text-4xl font-bold text-green-500 mb-1 sm:mb-2">
-              {stats.dailyWinRate.toFixed(1)}%
+              <AnimatedNumber value={stats.dailyWinRate} decimals={1} suffix="%" />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Win Rate</div>
           </div>
@@ -184,25 +178,27 @@ export default function StatsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.totalDailyPlayed}
+              <AnimatedNumber value={stats.totalDailyPlayed} />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Games Played</div>
           </div>
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.totalDailyWins}
+              <AnimatedNumber value={stats.totalDailyWins} />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Games Won</div>
           </div>
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.averageDailyAttempts.toFixed(1)}
+              <AnimatedNumber value={stats.averageDailyAttempts} decimals={1} />
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Avg Attempts</div>
           </div>
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.fastestDailyTime ? `⚡ ${formatTime(stats.fastestDailyTime)}` : '-'}
+              {stats.fastestDailyTime ? (
+                <>⚡ <AnimatedNumber value={stats.fastestDailyTime} isTime={true} /></>
+              ) : '-'}
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Fastest Time</div>
           </div>
@@ -218,35 +214,35 @@ export default function StatsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.totalLevelsSolved}
+              <AnimatedNumber value={stats.totalLevelsSolved} />
             </div>
             <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Levels Solved</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.totalLevelsAttempted}
+              <AnimatedNumber value={stats.totalLevelsAttempted} />
             </div>
             <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Levels Attempted</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 col-span-2 sm:col-span-1">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.levelSolveRate.toFixed(1)}%
+              <AnimatedNumber value={stats.levelSolveRate} decimals={1} suffix="%" />
             </div>
             <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Percent Complete</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.averageLevelAttempts.toFixed(1)}
+              <AnimatedNumber value={stats.averageLevelAttempts} decimals={1} />
             </div>
             <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Avg Attempts</div>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.totalLevelAttempts}
+              <AnimatedNumber value={stats.totalLevelAttempts} />
             </div>
             <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Total Attempts</div>
           </div>
@@ -260,26 +256,26 @@ export default function StatsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.easySolved}/100 ({stats.easySolved}%)
+                  <AnimatedNumber value={stats.easySolved} />/100 (<AnimatedNumber value={stats.easySolved} />%)
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.easyTotalAttempts}
+                  <AnimatedNumber value={stats.easyTotalAttempts} />
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.easySolved > 0 ? (stats.easyTotalAttempts / stats.easySolved).toFixed(1) : '0.0'}
+                  <AnimatedNumber value={stats.easySolved > 0 ? stats.easyTotalAttempts / stats.easySolved : 0} decimals={1} />
                 </span>
               </div>
               {stats.easyFastestTime && (
                 <div className="flex justify-between text-sm">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
                   <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ {formatTime(stats.easyFastestTime)}
+                    ⚡ <AnimatedNumber value={stats.easyFastestTime} isTime={true} />
                   </span>
                 </div>
               )}
@@ -292,26 +288,26 @@ export default function StatsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.mediumSolved}/100 ({stats.mediumSolved}%)
+                  <AnimatedNumber value={stats.mediumSolved} />/100 (<AnimatedNumber value={stats.mediumSolved} />%)
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.mediumTotalAttempts}
+                  <AnimatedNumber value={stats.mediumTotalAttempts} />
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.mediumSolved > 0 ? (stats.mediumTotalAttempts / stats.mediumSolved).toFixed(1) : '0.0'}
+                  <AnimatedNumber value={stats.mediumSolved > 0 ? stats.mediumTotalAttempts / stats.mediumSolved : 0} decimals={1} />
                 </span>
               </div>
               {stats.mediumFastestTime && (
                 <div className="flex justify-between text-sm">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
                   <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ {formatTime(stats.mediumFastestTime)}
+                    ⚡ <AnimatedNumber value={stats.mediumFastestTime} isTime={true} />
                   </span>
                 </div>
               )}
@@ -324,26 +320,26 @@ export default function StatsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.hardSolved}/100 ({stats.hardSolved}%)
+                  <AnimatedNumber value={stats.hardSolved} />/100 (<AnimatedNumber value={stats.hardSolved} />%)
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.hardTotalAttempts}
+                  <AnimatedNumber value={stats.hardTotalAttempts} />
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.hardSolved > 0 ? (stats.hardTotalAttempts / stats.hardSolved).toFixed(1) : '0.0'}
+                  <AnimatedNumber value={stats.hardSolved > 0 ? stats.hardTotalAttempts / stats.hardSolved : 0} decimals={1} />
                 </span>
               </div>
               {stats.hardFastestTime && (
                 <div className="flex justify-between text-sm">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
                   <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ {formatTime(stats.hardFastestTime)}
+                    ⚡ <AnimatedNumber value={stats.hardFastestTime} isTime={true} />
                   </span>
                 </div>
               )}
@@ -356,26 +352,26 @@ export default function StatsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.insaneSolved}/100 ({stats.insaneSolved}%)
+                  <AnimatedNumber value={stats.insaneSolved} />/100 (<AnimatedNumber value={stats.insaneSolved} />%)
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.insaneTotalAttempts}
+                  <AnimatedNumber value={stats.insaneTotalAttempts} />
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
                 <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {stats.insaneSolved > 0 ? (stats.insaneTotalAttempts / stats.insaneSolved).toFixed(1) : '0.0'}
+                  <AnimatedNumber value={stats.insaneSolved > 0 ? stats.insaneTotalAttempts / stats.insaneSolved : 0} decimals={1} />
                 </span>
               </div>
               {stats.insaneFastestTime && (
                 <div className="flex justify-between text-sm">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
                   <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ {formatTime(stats.insaneFastestTime)}
+                    ⚡ <AnimatedNumber value={stats.insaneFastestTime} isTime={true} />
                   </span>
                 </div>
               )}

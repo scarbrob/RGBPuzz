@@ -86,6 +86,13 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
 
     if (locked) return;
 
+    // Mark tutorial as seen on first interaction
+    if (typeof window !== 'undefined' && !localStorage.getItem('rgbpuzz-tutorial-seen')) {
+      localStorage.setItem('rgbpuzz-tutorial-seen', 'true');
+      // Trigger a storage event so the page can update
+      window.dispatchEvent(new Event('storage'));
+    }
+
     if (over && active.id !== over.id) {
       setItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)
@@ -102,7 +109,7 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
   }
 
   return (
-    <div className="flex justify-center items-center py-8 w-full">
+    <div className="flex flex-col justify-center items-center py-8 w-full">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -112,7 +119,7 @@ export default function ColorBoard({ colors, correctPositions = [], incorrectPos
           items={items.map(item => item.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="flex gap-2 sm:gap-2 md:gap-3 lg:gap-4 justify-center w-full px-4 sm:px-6">
+          <div className="flex gap-2 sm:gap-2 md:gap-3 lg:gap-4 justify-center w-full px-4 sm:px-6 relative">
             {items.map((item, index) => (
               <ColorTile
                 key={item.id}

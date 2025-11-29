@@ -305,6 +305,22 @@ export async function updateDailyStats(
 
   await attemptsClient.upsertEntity(attemptEntity, 'Replace');
 
+  // Clean up old daily attempts (keep only today's)
+  try {
+    const oldAttempts = attemptsClient.listEntities<DailyAttemptEntity>({
+      queryOptions: {
+        filter: `PartitionKey eq 'daily-attempts' and userId eq '${userId.replace(/'/g, "''")}' and date ne '${date}'`,
+      },
+    });
+
+    for await (const oldAttempt of oldAttempts) {
+      await attemptsClient.deleteEntity('daily-attempts', oldAttempt.rowKey);
+    }
+  } catch (error) {
+    // Log but don't fail if cleanup fails
+    console.warn('Failed to clean up old daily attempts:', error);
+  }
+
   // Update user stats
   const statsClient = getStatsTableClient();
   const stats = await statsClient.getEntity<UserStatsEntity>('users', userId);

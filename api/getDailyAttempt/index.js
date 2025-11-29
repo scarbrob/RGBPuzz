@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = async function (context, req) {
     try {
-        context.log('getUserLevelProgressHandler wrapper called with query:', req.query);
+        context.log('getDailyAttempt wrapper called with query:', req.query);
         
         // Create mock HttpRequest object for v4 function signature
         const mockRequest = {
@@ -26,13 +26,13 @@ module.exports = async function (context, req) {
             }
         };
         
-        const { getUserLevelProgressHandler } = require(path.join(__dirname, '..', 'dist', 'functions', 'getUserLevelProgressHandler'));
-        const response = await getUserLevelProgressHandler(mockRequest, context);
+        const { getDailyAttempt } = require(path.join(__dirname, '..', 'dist', 'functions', 'getDailyAttempt'));
+        const response = await getDailyAttempt(mockRequest, context);
         
-        context.log('getUserLevelProgressHandler response:', {
+        context.log('getDailyAttempt response:', {
             status: response.status,
             hasJsonBody: !!response.jsonBody,
-            itemCount: Array.isArray(response.jsonBody) ? response.jsonBody.length : 'not array'
+            bodyPreview: response.jsonBody ? JSON.stringify(response.jsonBody).substring(0, 200) : 'no body'
         });
         
         // Return the response - Azure Functions v3 expects body to be an object for JSON
@@ -45,7 +45,7 @@ module.exports = async function (context, req) {
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log.error('Error in getUserLevelProgressHandler:', error);
+        context.log.error('Error in getDailyAttempt:', error);
         context.res = {
             status: 500,
             headers: { 'Content-Type': 'application/json' },

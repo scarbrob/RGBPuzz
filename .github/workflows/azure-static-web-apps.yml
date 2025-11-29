@@ -36,7 +36,7 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_BASE_URL: https://rgbpuzz-api-bhfwdff7dbc7f8cf.eastus2-01.azurewebsites.net/api
+          VITE_API_BASE_URL: https://rgbpuzz.com/api
           VITE_AZURE_AD_CLIENT_ID: 7be679f2-3d5d-4d37-9bc8-a7457d3ab83f
           VITE_AZURE_AD_AUTHORITY: https://rgbpuzz.ciamlogin.com/e13a9ac4-2458-47a7-8f8f-743e6fd1aeb5
           VITE_REDIRECT_URI: https://www.rgbpuzz.com

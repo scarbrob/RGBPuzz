@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getLevelProgress } from '../services/statsService'
-
-type Difficulty = 'easy' | 'medium' | 'hard' | 'insane'
+import { DIFFICULTY_CONFIG, LEVELS_PER_DIFFICULTY, Difficulty } from '../../../shared/src/constants'
 
 interface DifficultyInfo {
   name: string
@@ -15,27 +14,27 @@ interface DifficultyInfo {
 const difficultyConfig: Record<Difficulty, DifficultyInfo> = {
   easy: {
     name: 'Easy',
-    colors: 3,
-    description: '3 colors, widely spaced',
-    emoji: '🟢'
+    colors: DIFFICULTY_CONFIG.easy.colorCount,
+    description: DIFFICULTY_CONFIG.easy.description,
+    emoji: DIFFICULTY_CONFIG.easy.emoji
   },
   medium: {
     name: 'Medium',
-    colors: 5,
-    description: '5 colors, moderate spacing',
-    emoji: '🟡'
+    colors: DIFFICULTY_CONFIG.medium.colorCount,
+    description: DIFFICULTY_CONFIG.medium.description,
+    emoji: DIFFICULTY_CONFIG.medium.emoji
   },
   hard: {
     name: 'Hard',
-    colors: 7,
-    description: '7 colors, close spacing',
-    emoji: '🟠'
+    colors: DIFFICULTY_CONFIG.hard.colorCount,
+    description: DIFFICULTY_CONFIG.hard.description,
+    emoji: DIFFICULTY_CONFIG.hard.emoji
   },
   insane: {
     name: 'Insane',
-    colors: 9,
-    description: '9 colors, very close spacing',
-    emoji: '🔴'
+    colors: DIFFICULTY_CONFIG.insane.colorCount,
+    description: DIFFICULTY_CONFIG.insane.description,
+    emoji: DIFFICULTY_CONFIG.insane.emoji
   }
 }
 
@@ -44,11 +43,21 @@ const loadProgress = async (user: any, difficulty: Difficulty): Promise<{ [level
   if (user) {
     try {
       const serverProgress = await getLevelProgress(user.id, difficulty)
-      // Convert server progress format to boolean map
+      // Convert server progress array format to boolean map
       const progressMap: { [level: number]: boolean } = {}
-      Object.entries(serverProgress).forEach(([level, data]) => {
-        progressMap[parseInt(level)] = data.solved
-      })
+      
+      // serverProgress is now an array of { level, solved, attempts, bestTime, boardState }
+      if (Array.isArray(serverProgress)) {
+        serverProgress.forEach((item: any) => {
+          progressMap[item.level] = item.solved
+        })
+      } else {
+        // Legacy format - object with level keys
+        Object.entries(serverProgress).forEach(([level, data]: [string, any]) => {
+          progressMap[parseInt(level)] = data.solved
+        })
+      }
+      
       return progressMap
     } catch (error) {
       console.error('Failed to load progress from server:', error)
@@ -74,9 +83,10 @@ export default function LevelsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy')
   const [progress, setProgress] = useState<{ [level: number]: boolean }>({})
   const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
   const navigate = useNavigate()
 
-  // Load progress when user or difficulty changes
+  // Load progress when user, difficulty, or refreshKey changes
   useEffect(() => {
     const fetchProgress = async () => {
       setLoading(true)
@@ -85,10 +95,28 @@ export default function LevelsPage() {
       setLoading(false)
     }
     fetchProgress()
-  }, [user, selectedDifficulty])
+  }, [user, selectedDifficulty, refreshKey])
   
-  // Generate 100 levels for the selected difficulty
-  const levels = Array.from({ length: 100 }, (_, i) => {
+  // Refresh progress when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setRefreshKey(prev => prev + 1)
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    // Also refresh when navigating back to this page
+    window.addEventListener('focus', () => setRefreshKey(prev => prev + 1))
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', () => setRefreshKey(prev => prev + 1))
+    }
+  }, [])
+  
+  // Generate levels for the selected difficulty
+  const levels = Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) => {
     const level = i + 1
     const completed = progress[level] || false
     const previousCompleted = level === 1 ? true : progress[level - 1] || false
@@ -181,7 +209,7 @@ export default function LevelsPage() {
 
       {/* Info Text */}
       <div className="mt-6 sm:mt-8 text-center text-light-text-secondary dark:text-dark-text-secondary text-sm sm:text-base">
-        <p>Complete all 100 levels in each difficulty to master the game!</p>
+        <p>Complete all {LEVELS_PER_DIFFICULTY} levels in each difficulty to master the game!</p>
         <p className="text-xs sm:text-sm mt-2">Colors get progressively closer together as you advance through levels.</p>
       </div>
     </div>

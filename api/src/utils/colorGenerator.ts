@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'crypto';
+import { DIFFICULTY_CONFIG } from '../constants';
 
 interface RGBColor {
   r: number;
@@ -111,18 +112,11 @@ export function generateRandomColors(count: number, theme?: 'reds' | 'greens' | 
 
 /**
  * Generate evenly spaced colors for level mode
- * @param difficulty - 'easy' (3 colors), 'medium' (5), 'hard' (7), 'insane' (9)
+ * Uses DIFFICULTY_CONFIG for color counts
  * @param level - Level number from 1-100, determines spacing between colors
  */
 export function generateLevelColors(difficulty: 'easy' | 'medium' | 'hard' | 'insane', level: number): RGBColor[] {
-  const colorCounts = {
-    easy: 3,
-    medium: 5,
-    hard: 7,
-    insane: 9
-  };
-  
-  const count = colorCounts[difficulty];
+  const count = DIFFICULTY_CONFIG[difficulty].colorCount;
   
   // Calculate the range based on level (1-100)
   // Level 1: max spacing, Level 100: min spacing

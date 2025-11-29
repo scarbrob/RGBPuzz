@@ -68,7 +68,7 @@ You have the right to:
 
 **Privacy by Design**: We only store your authentication provider's user ID. Your display name is only used locally in your browser for UI display and is never transmitted to or stored on our servers.
 
-To exercise these rights, you can contact us through the website.
+To exercise these rights, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
 
 ## Cookies and Local Storage
 
@@ -80,7 +80,7 @@ No tracking cookies or third-party advertising cookies are used.
 
 ## Children's Privacy
 
-RGBPuzz is not intended for children under 13. We do not knowingly collect information from children under 13. If you believe a child has provided us with personal information, please contact us through the website.
+RGBPuzz is not intended for children under 13. We do not knowingly collect information from children under 13. If you believe a child has provided us with personal information, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
 
 ## International Users
 
@@ -108,7 +108,7 @@ California residents have the right to:
 
 ## Contact Us
 
-If you have questions about this Privacy Policy or our data practices, you can reach us through the website at www.rgbpuzz.com.
+If you have questions about this Privacy Policy or our data practices, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
 
 ## Data We Don't Collect
 

@@ -34,7 +34,7 @@ ENTRA_POLICY=B2C_1_signupsignin
 Configure these in Azure Portal → Static Web App → Configuration:
 
 ```bash
-VITE_API_BASE_URL=https://your-api.azurewebsites.net/api
+VITE_API_BASE_URL=https://rgbpuzz.com/api
 VITE_AZURE_AD_CLIENT_ID=<your-client-id>
 VITE_AZURE_AD_AUTHORITY=https://rgbpuzz.b2clogin.com/rgbpuzz.onmicrosoft.com/B2C_1_signupsignin
 VITE_REDIRECT_URI=https://your-frontend-domain.azurestaticapps.net
@@ -319,7 +319,7 @@ ALLOWED_ORIGINS=https://your-actual-domain.azurestaticapps.net
 ENTRA_ENABLED=true
 
 # Frontend
-VITE_API_BASE_URL=https://rgbpuzz-api.azurewebsites.net/api
+VITE_API_BASE_URL=https://rgbpuzz.com/api
 VITE_REDIRECT_URI=https://your-actual-domain.azurestaticapps.net
 ```
 

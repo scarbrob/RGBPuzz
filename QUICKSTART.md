@@ -73,6 +73,17 @@ npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
 ## URLs
 
+**Development:**
 - Frontend: http://localhost:3000
 - API: http://localhost:7071
 - API Health: http://localhost:7071/api/daily-challenge
+
+**Production:**
+- Website: **rgbpuzz.com** (ready to deploy)
+- API: https://rgbpuzz.com/api (deployed ✅)
+- API Health: https://rgbpuzz.com/api/daily-challenge
+
+---
+
+**RGBPuzz** - Open source daily puzzle game  
+Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

@@ -139,7 +139,7 @@ You are subject to the terms and privacy policies of these providers when using 
 
 ## 14. Copyright Infringement
 
-If you believe content on RGBPuzz infringes your copyright, contact us through the website with:
+If you believe content on RGBPuzz infringes your copyright, please file an issue at https://github.com/scarbrob/RGBPuzz/issues with:
 - Description of the copyrighted work
 - Location of the infringing material
 - Your contact information
@@ -157,7 +157,7 @@ These Terms are governed by the laws of the United States and the State of Washi
 ## 17. Dispute Resolution
 
 ### 17.1 Informal Resolution
-Before filing a claim, you agree to contact us to attempt informal resolution.
+Before filing a claim, you agree to contact us via GitHub issues (https://github.com/scarbrob/RGBPuzz/issues) to attempt informal resolution.
 
 ### 17.2 Arbitration
 Any disputes will be resolved through binding arbitration rather than in court, except you may assert claims in small claims court.
@@ -179,7 +179,7 @@ Our failure to enforce any right or provision of these Terms does not constitute
 
 ## 21. Contact Information
 
-For questions about these Terms, you can reach us through the website at www.rgbpuzz.com.
+For questions about these Terms, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
 
 ## 22. Acknowledgment
 

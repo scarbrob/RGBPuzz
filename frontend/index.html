@@ -4,12 +4,84 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="RGBPuzz - Daily color sorting puzzle game. Sort colors by RGB values!" />
-    <title>RGBPuzz - Daily Color Puzzle</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>RGBPuzz - Daily Color Sorting Puzzle Game</title>
+    <meta name="title" content="RGBPuzz - Daily Color Sorting Puzzle Game" />
+    <meta name="description" content="Sort colors by RGB values in this addictive daily puzzle game! 400+ levels, daily challenges, and streak tracking. Free brain training game at rgbpuzz.com" />
+    <meta name="keywords" content="color puzzle, RGB game, daily puzzle, color sorting, puzzle game, Wordle, brain game, color game, daily challenge, free puzzle game" />
+    <meta name="author" content="Benjamin Scarbrough" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://rgbpuzz.com" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rgbpuzz.com" />
+    <meta property="og:title" content="RGBPuzz - Daily Color Sorting Puzzle Game" />
+    <meta property="og:description" content="Sort colors by RGB values in this addictive daily puzzle game! 400+ levels, daily challenges, and streak tracking. Free brain training game." />
+    <meta property="og:image" content="https://rgbpuzz.com/favicon.svg" />
+    <meta property="og:site_name" content="RGBPuzz" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://rgbpuzz.com" />
+    <meta name="twitter:title" content="RGBPuzz - Daily Color Sorting Puzzle Game" />
+    <meta name="twitter:description" content="Sort colors by RGB values in this addictive daily puzzle game! 400+ levels, daily challenges, and streak tracking. Free brain training game." />
+    <meta name="twitter:image" content="https://rgbpuzz.com/favicon.svg" />
+    <meta name="twitter:creator" content="@rgbpuzz" />
+    
+    <!-- Additional Meta Tags -->
+    <meta name="application-name" content="RGBPuzz" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RGBPuzz" />
+    <meta name="theme-color" content="#9333ea" />
+    <meta name="format-detection" content="telephone=no" />
+    
     <script>
       // Prevent flash of unstyled content
       const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.classList.add(theme);
+    </script>
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "RGBPuzz",
+      "url": "https://rgbpuzz.com",
+      "description": "A daily color sorting puzzle game where players sort colors by RGB values. Features 400+ levels, daily challenges, and streak tracking.",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Benjamin Scarbrough"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "screenshot": "https://rgbpuzz.com/favicon.svg",
+      "featureList": [
+        "Daily color sorting challenges",
+        "400+ puzzle levels across 4 difficulty tiers",
+        "Streak tracking and statistics",
+        "Dark and light theme support",
+        "User authentication with Microsoft and Google",
+        "Progress tracking and personal bests"
+      ],
+      "inLanguage": "en-US",
+      "browserRequirements": "Requires JavaScript. Requires HTML5."
+    }
     </script>
   </head>
   <body>

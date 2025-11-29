@@ -21,9 +21,9 @@ export default function Header() {
             
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Desktop Navigation */}
-              <div className="hidden md:flex gap-4 lg:gap-6">
+              <div className="hidden md:flex items-center gap-4 lg:gap-6">
                 {user && (
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary text-sm">
+                  <span className="text-light-text-secondary dark:text-dark-text-secondary font-medium">
                     {user.displayName || user.email}
                   </span>
                 )}

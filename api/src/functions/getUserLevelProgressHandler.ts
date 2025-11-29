@@ -60,20 +60,18 @@ export async function getUserLevelProgressHandler(request: any, context: any) {
 
     const progress = await getUserLevelProgress(userId, difficulty as 'easy' | 'medium' | 'hard' | 'insane');
 
-    // Convert to a simple map of level -> completion data
-    const progressMap: { [level: number]: { solved: boolean; attempts: number; bestTime?: number } } = {};
-    
-    progress.forEach(p => {
-      progressMap[p.level] = {
-        solved: p.solved,
-        attempts: p.attempts,
-        bestTime: p.bestTime,
-      };
-    });
+    // Return progress with boardState for restoration
+    const progressData = progress.map(p => ({
+      level: p.level,
+      solved: p.solved,
+      attempts: p.attempts,
+      bestTime: p.bestTime,
+      boardState: p.boardState ? JSON.parse(p.boardState) : undefined,
+    }));
 
     return addCorsHeaders({
       status: 200,
-      jsonBody: progressMap,
+      jsonBody: progressData,
     });
   } catch (error) {
     console.error('Error getting level progress:', error);

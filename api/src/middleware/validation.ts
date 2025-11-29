@@ -2,7 +2,7 @@
  * Input validation and sanitization middleware
  */
 
-import { USER_ID_REGEX, EMAIL_REGEX } from '../constants';
+import { USER_ID_REGEX, EMAIL_REGEX, LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../constants';
 
 export interface ValidationError {
   field: string;
@@ -51,13 +51,11 @@ export function validateEmail(email: string): ValidationError | null {
  * Validate difficulty level
  */
 export function validateDifficulty(difficulty: string): ValidationError | null {
-  const validDifficulties = ['easy', 'medium', 'hard', 'insane'];
-  
   if (!difficulty || typeof difficulty !== 'string') {
     return { field: 'difficulty', message: 'difficulty is required' };
   }
   
-  if (!validDifficulties.includes(difficulty)) {
+  if (!DIFFICULTY_LEVELS.includes(difficulty as any)) {
     return { field: 'difficulty', message: 'invalid difficulty level' };
   }
   
@@ -72,8 +70,8 @@ export function validateLevel(level: number): ValidationError | null {
     return { field: 'level', message: 'level must be a number' };
   }
   
-  if (level < 1 || level > 100) {
-    return { field: 'level', message: 'level must be between 1 and 100' };
+  if (level < 1 || level > LEVELS_PER_DIFFICULTY) {
+    return { field: 'level', message: `level must be between 1 and ${LEVELS_PER_DIFFICULTY}` };
   }
   
   if (!Number.isInteger(level)) {

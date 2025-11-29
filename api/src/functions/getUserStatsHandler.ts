@@ -62,6 +62,7 @@ export async function getUserStatsHandler(request: any, context: any) {
       totalDailyPlayed: stats.totalDailyPlayed,
       totalDailyWins: stats.totalDailyWins,
       averageDailyAttempts: stats.averageDailyAttempts,
+      fastestDailyTime: stats.fastestDailyTime,
       
       // Level Stats
       totalLevelsAttempted: stats.totalLevelsAttempted,

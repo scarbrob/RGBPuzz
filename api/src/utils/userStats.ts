@@ -44,6 +44,7 @@ export interface UserStatsEntity {
   totalDailyPlayed: number;
   totalDailyWins: number;
   averageDailyAttempts: number;
+  fastestDailyTime?: number; // milliseconds - best time on any daily challenge
   
   // Level Stats
   totalLevelsAttempted: number;
@@ -78,7 +79,7 @@ export interface DailyAttemptEntity {
   date: string; // YYYY-MM-DD
   attempts: number;
   solved: boolean;
-  solveTime?: number; // milliseconds
+  solveTime?: number; // milliseconds - accumulated active time on puzzle
   timestamp: Date;
   boardState?: string; // JSON stringified array of color objects
   attemptHistory?: string; // JSON stringified attempt history
@@ -334,6 +335,13 @@ export async function updateDailyStats(
 
   if (solved) {
     stats.totalDailyWins++;
+    
+    // Update fastest daily time if this is faster
+    if (solveTime !== undefined) {
+      if (!stats.fastestDailyTime || solveTime < stats.fastestDailyTime) {
+        stats.fastestDailyTime = solveTime;
+      }
+    }
   }
 
   // Calculate win rate

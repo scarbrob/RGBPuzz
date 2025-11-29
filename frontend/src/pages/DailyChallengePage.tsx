@@ -4,21 +4,28 @@ import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateDailyStats } from '../services/statsService'
 import { API_ENDPOINTS } from '../config/api'
+import { DAILY_CHALLENGE_CONFIG } from '../../../shared/src/constants'
 
 export default function DailyChallengePage() {
   const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [attempts, setAttempts] = useState(0)
-  const [maxAttempts, setMaxAttempts] = useState(5)
+  const [maxAttempts, setMaxAttempts] = useState<number>(DAILY_CHALLENGE_CONFIG.maxAttempts)
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
   const [feedback, setFeedback] = useState<string>('')
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
   const [incorrectPositions, setIncorrectPositions] = useState<number[]>([])
   const [showHint, setShowHint] = useState(false)
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const [challengeDate, setChallengeDate] = useState<string>(today)
-  const [startTime] = useState<number>(Date.now())
+  
+  // Get today's date in local timezone consistently
+  const getLocalDate = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  
+  const [challengeDate, setChallengeDate] = useState<string>(getLocalDate())
+  const [elapsedTime, setElapsedTime] = useState<number>(0) // Accumulated time in ms
+  const [lastActiveTime, setLastActiveTime] = useState<number>(Date.now())
   const [attemptHistory, setAttemptHistory] = useState<Array<{
     colors: Array<{ id: string; hex: string; encrypted: string }>;
     correctPositions: number[];
@@ -26,8 +33,7 @@ export default function DailyChallengePage() {
   }>>([])
   const [statsUpdated, setStatsUpdated] = useState(false)
   const resetPuzzle = () => {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const today = getLocalDate();
     sessionStorage.removeItem(`rgbpuzz-${today}`);
     window.location.reload();
   };
@@ -54,11 +60,70 @@ export default function DailyChallengePage() {
   useEffect(() => {
     // Fetch daily challenge from API
     const fetchChallenge = async () => {
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const today = getLocalDate();
       
-      // Check sessionStorage ONLY for non-authenticated users
-      if (!user) {
+      if (user) {
+        // Logged in: check database first
+        try {
+          const response = await fetch(API_ENDPOINTS.getDailyAttempt(user.id, today));
+          if (response.ok) {
+            const dbAttempt = await response.json();
+            
+            // Only restore if we have boardState (in-progress or completed)
+            if (dbAttempt && dbAttempt.boardState) {
+              const decryptedColors = dbAttempt.boardState.map((token: any) => ({
+                  id: token.id,
+                  hex: decryptHex(token.encrypted, token.id),
+                  encrypted: token.encrypted
+                }));
+                
+                setColors(decryptedColors);
+                setAttempts(dbAttempt.attempts || 0);
+                setMaxAttempts(DAILY_CHALLENGE_CONFIG.maxAttempts);
+                setGameState(dbAttempt.solved ? 'won' : (dbAttempt.attempts >= DAILY_CHALLENGE_CONFIG.maxAttempts ? 'lost' : 'playing'));
+                setChallengeDate(today);
+                setStatsUpdated(dbAttempt.solved || dbAttempt.attempts >= DAILY_CHALLENGE_CONFIG.maxAttempts);
+                
+                // Restore elapsed time if available (time already spent)
+                if (dbAttempt.solveTime) {
+                  setElapsedTime(dbAttempt.solveTime);
+                }
+                setLastActiveTime(Date.now());
+                
+                // Restore attempt history if available
+                if (dbAttempt.attemptHistory) {
+                  const decryptedHistory = dbAttempt.attemptHistory.map((attempt: any) => ({
+                    ...attempt,
+                    colors: attempt.colors.map((token: any) => ({
+                      id: token.id,
+                      hex: decryptHex(token.encrypted, token.id),
+                      encrypted: token.encrypted
+                    }))
+                  }));
+                  setAttemptHistory(decryptedHistory);
+                  
+                  // Restore visual feedback from last attempt
+                  const lastAttempt = decryptedHistory[decryptedHistory.length - 1];
+                  if (lastAttempt) {
+                    setCorrectPositions(lastAttempt.correctPositions || []);
+                    setIncorrectPositions(lastAttempt.incorrectPositions || []);
+                  }
+                }
+                
+                // If the challenge is complete, show all correct
+                if (dbAttempt.solved) {
+                  setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
+                }
+                
+                return; // Don't fetch fresh challenge
+            }
+          }
+        } catch (error) {
+          // No database attempt found, will fetch fresh challenge
+        }
+        // Fall through to fetch fresh challenge
+      } else {
+        // Not logged in: check sessionStorage
         const sessionKey = `rgbpuzz-local-${today}`;
         const savedState = sessionStorage.getItem(sessionKey);
         
@@ -85,20 +150,7 @@ export default function DailyChallengePage() {
         }
       }
       
-      // For authenticated users, always check database
-      let dbAttempt = null;
-      if (user) {
-        try {
-          const response = await fetch(API_ENDPOINTS.getDailyAttempt(user.id, today));
-          if (response.ok) {
-            dbAttempt = await response.json();
-            console.log('Found existing daily attempt in database:', dbAttempt);
-          }
-        } catch (error) {
-          console.log('No existing daily attempt found in database');
-        }
-      }
-      
+      // Fetch fresh challenge from API
       try {
         const response = await fetch(API_ENDPOINTS.dailyChallenge(today));
         if (!response.ok) throw new Error('Failed to fetch challenge');
@@ -113,59 +165,19 @@ export default function DailyChallengePage() {
         
         setMaxAttempts(data.maxAttempts);
         setChallengeDate(data.date);
+        setColors(decryptedColors);
         
-        // If user has previous attempts from database, restore them
-        if (dbAttempt) {
-          // Restore board state and attempt history if available
-          // Decrypt the hex values from encrypted tokens
-          const savedColors = dbAttempt.boardState 
-            ? dbAttempt.boardState.map((token: { id: string; encrypted: string }) => ({
-                id: token.id,
-                hex: decryptHex(token.encrypted, token.id),
-                encrypted: token.encrypted
-              }))
-            : decryptedColors;
-          
-          const savedHistory = dbAttempt.attemptHistory 
-            ? dbAttempt.attemptHistory.map((attempt: any) => ({
-                colors: attempt.colors.map((token: { id: string; encrypted: string }) => ({
-                  id: token.id,
-                  hex: decryptHex(token.encrypted, token.id),
-                  encrypted: token.encrypted
-                })),
-                correctPositions: attempt.correctPositions,
-                incorrectPositions: attempt.incorrectPositions
-              }))
-            : [];
-          
-          setColors(savedColors);
-          setAttempts(dbAttempt.attempts);
-          setAttemptHistory(savedHistory);
-          
-          if (dbAttempt.solved) {
-            setGameState('won');
-            setFeedback(`🎉 Solved in ${dbAttempt.attempts}/${data.maxAttempts}!`);
-            setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
-            setStatsUpdated(true);
-          } else if (dbAttempt.attempts >= data.maxAttempts) {
-            setGameState('lost');
-            setFeedback('😔 Out of attempts! Try again tomorrow.');
-            setStatsUpdated(true);
-            // Show last attempt feedback
-            if (savedHistory.length > 0) {
-              const lastAttempt = savedHistory[savedHistory.length - 1];
-              setCorrectPositions(lastAttempt.correctPositions || []);
-              setIncorrectPositions(lastAttempt.incorrectPositions || []);
-            }
-          } else if (savedHistory.length > 0) {
-            // Restore in-progress attempt feedback
-            const lastAttempt = savedHistory[savedHistory.length - 1];
-            setCorrectPositions(lastAttempt.correctPositions || []);
-            setIncorrectPositions(lastAttempt.incorrectPositions || []);
-          }
-        } else {
-          // No previous attempts, set fresh challenge
-          setColors(decryptedColors);
+        // Save initial state to database for logged-in users
+        if (user) {
+          updateDailyStats({
+            userId: user.id,
+            date: today,
+            attempts: 0,
+            solved: false,
+            solveTime: 0,
+            boardState: decryptedColors.map((c: { id: string; encrypted: string }) => ({ id: c.id, encrypted: c.encrypted })),
+            attemptHistory: [],
+          }).catch(err => console.error('Failed to save initial state:', err));
         }
       } catch (error) {
         console.error('Error fetching daily challenge:', error);
@@ -185,11 +197,35 @@ export default function DailyChallengePage() {
     fetchChallenge();
   }, [user])
 
+  // Track active time - pause when page is hidden, resume when visible
+  useEffect(() => {
+    if (gameState !== 'playing') return; // Don't track time if game is over
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page hidden - accumulate time spent
+        setElapsedTime(prev => prev + (Date.now() - lastActiveTime));
+      } else {
+        // Page visible - reset last active time
+        setLastActiveTime(Date.now());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastActiveTime, gameState]);
+
+  // Calculate current solve time (accumulated + current session)
+  const getCurrentSolveTime = () => {
+    if (gameState !== 'playing') return elapsedTime;
+    return elapsedTime + (Date.now() - lastActiveTime);
+  };
+
   const handleSubmit = async () => {
     if (gameState !== 'playing') return;
 
     const orderedTokens = colors.map(c => c.id);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
     
     try {
       const response = await fetch(API_ENDPOINTS.validateSolution(), {
@@ -232,13 +268,13 @@ export default function DailyChallengePage() {
         
         // Update stats for authenticated users
         if (user && !statsUpdated) {
-          const solveTime = Date.now() - startTime;
+          const finalSolveTime = getCurrentSolveTime();
           updateDailyStats({
             userId: user.id,
             date: today,
             attempts: attempts + 1,
             solved: true,
-            solveTime,
+            solveTime: finalSolveTime,
             boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
             attemptHistory: newHistory.map(h => ({
               colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
@@ -256,11 +292,13 @@ export default function DailyChallengePage() {
         
         // Update stats for authenticated users (loss)
         if (user && !statsUpdated) {
+          const finalSolveTime = getCurrentSolveTime();
           updateDailyStats({
             userId: user.id,
             date: today,
             attempts: attempts + 1,
             solved: false,
+            solveTime: finalSolveTime,
             boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
             attemptHistory: newHistory.map(h => ({
               colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
@@ -276,11 +314,13 @@ export default function DailyChallengePage() {
         
         // Save in-progress attempts for authenticated users
         if (user) {
+          const currentSolveTime = getCurrentSolveTime();
           updateDailyStats({
             userId: user.id,
             date: today,
             attempts: attempts + 1,
             solved: false,
+            solveTime: currentSolveTime,
             boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
             attemptHistory: newHistory.map(h => ({
               colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),

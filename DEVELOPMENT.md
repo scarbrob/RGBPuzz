@@ -2,10 +2,19 @@
 
 ## Local Development
 
+### Production Status
+
+**RGBPuzz is production-ready!**
+- ✅ API deployed to **rgbpuzz.com/api** (custom domain configured)
+- ✅ All features complete (Daily + 400 Levels)
+- ✅ Authentication working (Microsoft + Google)
+- ✅ Statistics tracking live
+- 🚀 Ready for frontend deployment to **rgbpuzz.com**
+
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Azure Functions Core Tools v4
+- Azure Functions Core Tools v4 (for local development)
 - Git
 
 ### Installation
@@ -123,27 +132,31 @@ rgbpuzz/
 
 ## API Endpoints
 
+**Base URL**: https://rgbpuzz.com/api (Production)  
+**Local URL**: http://localhost:7071/api (Development)
+
 ### `GET /api/daily-challenge`
 Returns today's challenge with shuffled color tokens.
 
 **Response:**
 ```json
 {
-  "date": "2025-11-24",
+  "date": "2025-11-28",
   "colorTokens": [
-    { "id": "color-0", "hash": "abc123", "hex": "#ff6b6b" }
+    { "id": "color-0", "encrypted": "U2FsdGVkX1...", "hex": "#ff6b6b" }
   ],
   "maxAttempts": 5
 }
 ```
 
 ### `POST /api/validate-solution`
-Validates user's color ordering.
+Validates user's color ordering (Daily or Level mode).
 
 **Request:**
 ```json
 {
-  "date": "2025-11-24",
+  "mode": "daily",
+  "date": "2025-11-28",
   "orderedTokenIds": ["color-2", "color-0", "color-1", "color-4", "color-3"]
 }
 ```
@@ -157,11 +170,20 @@ Validates user's color ordering.
 }
 ```
 
-### `GET /api/level/{levelId}`
-Returns level challenge configuration.
+### `GET /api/level?difficulty={difficulty}&level={level}`
+Returns level challenge (Easy/Medium/Hard/Insane, 1-100).
 
-### `GET /api/user/stats`
-Returns user statistics (requires authentication).
+### `GET /api/user/stats?userId={userId}&email={email}`
+Returns user statistics (streaks, win rates, fastest times).
+
+### `POST /api/user/daily-stats`
+Updates daily challenge statistics (calculates streaks automatically).
+
+### `POST /api/user/level-stats`
+Updates level statistics (tracks progress per difficulty).
+
+### `GET /api/user/level-progress?userId={userId}&difficulty={difficulty}`
+Returns level completion progress for a difficulty.
 
 ## Testing
 
@@ -197,3 +219,8 @@ npm run test
 ### CORS errors
 - Ensure API is running on port 7071
 - Check `vite.config.ts` proxy configuration
+
+---
+
+**RGBPuzz** - Open source daily puzzle game  
+Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

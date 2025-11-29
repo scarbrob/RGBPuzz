@@ -14,5 +14,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/functions/getDailyAttempt.js"
+  "scriptFile": "index.js"
 }

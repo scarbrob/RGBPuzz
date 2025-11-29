@@ -11,6 +11,7 @@ interface UserStats {
   totalDailyPlayed: number
   totalDailyWins: number
   averageDailyAttempts: number
+  fastestDailyTime?: number
   
   // Level Stats
   totalLevelsAttempted: number
@@ -180,7 +181,7 @@ export default function StatsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
             <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
               {stats.totalDailyPlayed}
@@ -198,6 +199,12 @@ export default function StatsPage() {
               {stats.averageDailyAttempts.toFixed(1)}
             </div>
             <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Avg Attempts</div>
+          </div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
+            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
+              {stats.fastestDailyTime ? `⚡ ${formatTime(stats.fastestDailyTime)}` : '-'}
+            </div>
+            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Fastest Time</div>
           </div>
         </div>
       </div>

@@ -4,14 +4,14 @@ import { CSS } from '@dnd-kit/utilities'
 interface ColorTileProps {
   id: string
   color: string
-  index: number
+  index?: number
   isCorrect?: boolean
   isIncorrect?: boolean
   locked?: boolean
   size?: number
 }
 
-export default function ColorTile({ id, color, index, isCorrect = false, isIncorrect = false, locked = false, size }: ColorTileProps) {
+export default function ColorTile({ id, color, isCorrect = false, isIncorrect = false, locked = false, size }: ColorTileProps) {
   const {
     attributes,
     listeners,
@@ -54,11 +54,6 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
           ✗
         </div>
       )}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <span className="text-white font-bold text-shadow bg-black bg-opacity-50 px-2 py-1 rounded">
-          {index + 1}
-        </span>
-      </div>
     </button>
   )
 }

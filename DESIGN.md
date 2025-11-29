@@ -307,3 +307,8 @@ Play at rgbpuzz.com
 6. **Fast Loading**: <1s initial load
 7. **Smooth Animations**: 60fps always
 8. **Accessible**: WCAG 2.1 AA compliant
+
+---
+
+**RGBPuzz** - Open source daily puzzle game  
+Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

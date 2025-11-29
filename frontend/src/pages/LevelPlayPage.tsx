@@ -81,8 +81,42 @@ export default function LevelPlayPage() {
     const fetchLevel = async () => {
       if (!difficulty || !level) return
 
-      // Check sessionStorage ONLY for non-authenticated users
-      if (!user) {
+      if (user) {
+        // Logged in: check database first
+        try {
+          const response = await fetch(API_ENDPOINTS.getLevelProgress(user.id, difficulty));
+          if (response.ok) {
+            const progressData = await response.json();
+            // Find this specific level in the progress data
+            const dbAttempt = progressData.find((p: any) => p.level === parseInt(level));
+            
+            // Only restore if we have boardState (in-progress or completed)
+            if (dbAttempt && dbAttempt.boardState) {
+              const decryptedColors = dbAttempt.boardState.map((token: any) => ({
+                id: token.id,
+                hex: decryptHex(token.encrypted, token.id),
+                encrypted: token.encrypted
+              }));
+              
+              setColors(decryptedColors);
+              setAttempts(dbAttempt.attempts || 0);
+              setGameState(dbAttempt.solved ? 'won' : 'playing');
+              setStatsUpdated(dbAttempt.solved);
+              
+              // If the level is complete, show all correct
+              if (dbAttempt.solved) {
+                setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
+              }
+              
+              return; // Don't fetch fresh level
+            }
+          }
+        } catch (error) {
+          // No database progress found, will fetch fresh level
+        }
+        // Fall through to fetch fresh level
+      } else {
+        // Not logged in: check sessionStorage
         const sessionKey = `level-local-${difficulty}-${level}`;
         const savedState = sessionStorage.getItem(sessionKey);
         
@@ -108,24 +142,6 @@ export default function LevelPlayPage() {
         }
       }
 
-      // For authenticated users, always check database for progress
-      let dbAttempt = null;
-      if (user) {
-        try {
-          const response = await fetch(API_ENDPOINTS.getLevelProgress(user.id, difficulty));
-          if (response.ok) {
-            const progressData = await response.json();
-            // Find this specific level in the progress data
-            dbAttempt = progressData.find((p: any) => p.level === parseInt(level));
-            if (dbAttempt) {
-              console.log('Found existing level attempt in database:', dbAttempt);
-            }
-          }
-        } catch (error) {
-          console.log('No existing level progress found in database');
-        }
-      }
-
       try {
         const response = await fetch(API_ENDPOINTS.getLevel(difficulty, parseInt(level)))
         if (!response.ok) throw new Error('Failed to fetch level')
@@ -138,49 +154,7 @@ export default function LevelPlayPage() {
           encrypted: token.encrypted
         }))
         
-        // If user has previous attempts in the database, restore them
-        if (dbAttempt) {
-          // Restore board state and attempt history if available
-          // Decrypt the hex values from encrypted tokens
-          const savedColors = dbAttempt.boardState 
-            ? JSON.parse(dbAttempt.boardState).map((token: { id: string; encrypted: string }) => ({
-                id: token.id,
-                hex: decryptHex(token.encrypted, token.id),
-                encrypted: token.encrypted
-              }))
-            : decryptedColors;
-          
-          const savedHistory = dbAttempt.attemptHistory 
-            ? JSON.parse(dbAttempt.attemptHistory).map((attempt: any) => ({
-                colors: attempt.colors.map((token: { id: string; encrypted: string }) => ({
-                  id: token.id,
-                  hex: decryptHex(token.encrypted, token.id),
-                  encrypted: token.encrypted
-                })),
-                correctPositions: attempt.correctPositions,
-                incorrectPositions: attempt.incorrectPositions
-              }))
-            : [];
-          
-          setColors(savedColors);
-          setAttempts(dbAttempt.attempts);
-          setAttemptHistory(savedHistory);
-          
-          if (dbAttempt.solved) {
-            setGameState('won');
-            setFeedback(`🎉 Level Complete in ${dbAttempt.attempts} attempt${dbAttempt.attempts === 1 ? '' : 's'}!`);
-            setCorrectPositions(savedColors.map((_: any, idx: number) => idx));
-            setStatsUpdated(true);
-          } else if (savedHistory.length > 0) {
-            // Restore last attempt feedback for in-progress levels
-            const lastAttempt = savedHistory[savedHistory.length - 1];
-            setCorrectPositions(lastAttempt.correctPositions || []);
-            setIncorrectPositions(lastAttempt.incorrectPositions || []);
-          }
-        } else {
-          // No previous attempts, set fresh level
-          setColors(decryptedColors);
-        }
+        setColors(decryptedColors);
       } catch (error) {
         console.error('Error fetching level:', error)
         // Fallback to mock data
@@ -350,42 +324,41 @@ export default function LevelPlayPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="max-w-4xl mx-auto px-4">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={handleBackToLevels}
-          className="px-4 py-2 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all"
+          className="mb-3 sm:mb-4 px-3 sm:px-4 py-2 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all text-sm sm:text-base"
         >
           ← Back to Levels
         </button>
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-light-text dark:text-dark-text mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-light-text dark:text-dark-text mb-1 sm:mb-2">
             {difficultyEmoji[difficulty as Difficulty]} {difficulty?.charAt(0).toUpperCase()}{difficulty?.slice(1)} - Level {level}
           </h1>
-          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+          <p className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">
             Attempts: {attempts}
           </p>
         </div>
-        <div className="w-32"></div>
       </div>
 
       {/* Color Spectrum Hint */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <button
           onClick={() => setShowHint(!showHint)}
-          className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
+          className="w-full text-center text-xs sm:text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
         >
           💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
         </button>
         {showHint && (
-          <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
+          <div className="relative h-8 sm:h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
             <div 
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(to right, #000000, #0000ff, #00ff00, #00ffff, #ff0000, #ff00ff, #ffff00, #ffffff)'
               }}
             />
-            <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
+            <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
               <span>Lowest RGB</span>
               <span>Highest RGB</span>
             </div>
@@ -409,29 +382,29 @@ export default function LevelPlayPage() {
         {gameState === 'playing' && (
           <button
             onClick={handleSubmit}
-            className="game-button"
+            className="game-button text-sm sm:text-base"
           >
             Submit
           </button>
         )}
 
         {feedback && (
-          <div className="mt-4 text-xl font-semibold text-light-text dark:text-dark-text">
+          <div className="mt-4 text-lg sm:text-xl font-semibold text-light-text dark:text-dark-text">
             {feedback}
           </div>
         )}
 
         {gameState === 'won' && (
-          <div className="mt-4 flex gap-4 justify-center">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button
               onClick={handleNextLevel}
-              className="game-button"
+              className="game-button text-sm sm:text-base"
             >
               Next Level →
             </button>
             <button
               onClick={handleBackToLevels}
-              className="px-6 py-3 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all"
+              className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all text-sm sm:text-base"
             >
               Level Select
             </button>

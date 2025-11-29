@@ -133,18 +133,40 @@ export default function DailyChallengePage() {
         
         if (savedState) {
           const parsed = JSON.parse(savedState);
-          setColors(parsed.colors);
+          
+          // Decrypt colors from storage
+          const decryptedColors = parsed.colors.map((token: any) => ({
+            id: token.id,
+            hex: decryptHex(token.encrypted, token.id),
+            encrypted: token.encrypted
+          }));
+          
+          setColors(decryptedColors);
           setAttempts(parsed.attempts);
           setMaxAttempts(parsed.maxAttempts);
           setGameState(parsed.gameState);
           setFeedback(parsed.feedback);
-          setAttemptHistory(parsed.attemptHistory || []);
+          
+          // Decrypt attempt history colors if present
+          if (parsed.attemptHistory) {
+            const decryptedHistory = parsed.attemptHistory.map((attempt: any) => ({
+              colors: attempt.colors.map((token: any) => ({
+                id: token.id,
+                hex: decryptHex(token.encrypted, token.id),
+                encrypted: token.encrypted
+              })),
+              correctPositions: attempt.correctPositions,
+              incorrectPositions: attempt.incorrectPositions
+            }));
+            setAttemptHistory(decryptedHistory);
+          }
+          
           setChallengeDate(parsed.challengeDate || today);
           setStatsUpdated(parsed.statsUpdated || false);
           
           // If the challenge is already complete, restore the final state
           if (parsed.gameState !== 'playing') {
-            setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
+            setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
           } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
             const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1];
             setCorrectPositions(lastAttempt.correctPositions || []);
@@ -340,12 +362,16 @@ export default function DailyChallengePage() {
       // Save state to sessionStorage (only for non-authenticated users)
       if (!user) {
         const stateToSave = {
-          colors,
+          colors: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
           attempts: attempts + 1,
           maxAttempts,
           gameState: newGameState,
           feedback: newFeedback,
-          attemptHistory: newHistory,
+          attemptHistory: newHistory.map(h => ({
+            colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            correctPositions: h.correctPositions,
+            incorrectPositions: h.incorrectPositions
+          })),
           challengeDate,
           statsUpdated: statsUpdated || (newGameState !== 'playing')
         };

@@ -138,16 +138,38 @@ export default function LevelPlayPage() {
         
         if (savedState) {
           const parsed = JSON.parse(savedState);
-          setColors(parsed.colors);
+          
+          // Decrypt colors from storage
+          const decryptedColors = parsed.colors.map((token: any) => ({
+            id: token.id,
+            hex: decryptHex(token.encrypted, token.id),
+            encrypted: token.encrypted
+          }));
+          
+          setColors(decryptedColors);
           setAttempts(parsed.attempts);
           setGameState(parsed.gameState);
           setFeedback(parsed.feedback);
-          setAttemptHistory(parsed.attemptHistory || []);
+          
+          // Decrypt attempt history colors if present
+          if (parsed.attemptHistory) {
+            const decryptedHistory = parsed.attemptHistory.map((attempt: any) => ({
+              colors: attempt.colors.map((token: any) => ({
+                id: token.id,
+                hex: decryptHex(token.encrypted, token.id),
+                encrypted: token.encrypted
+              })),
+              correctPositions: attempt.correctPositions,
+              incorrectPositions: attempt.incorrectPositions
+            }));
+            setAttemptHistory(decryptedHistory);
+          }
+          
           setStatsUpdated(parsed.statsUpdated || false);
           
           // If the level is complete, restore the final state
           if (parsed.gameState !== 'playing') {
-            setCorrectPositions(parsed.colors.map((_: any, idx: number) => idx));
+            setCorrectPositions(decryptedColors.map((_: any, idx: number) => idx));
           } else if (parsed.attemptHistory && parsed.attemptHistory.length > 0) {
             // Restore the feedback from the last attempt if still playing
             const lastAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1];
@@ -299,11 +321,15 @@ export default function LevelPlayPage() {
       // Save session state (only for non-authenticated users)
       if (!user) {
         const stateToSave = {
-          colors,
+          colors: colors.map(c => ({ id: c.id, encrypted: c.encrypted })), // Only save encrypted values
           attempts: attempts + 1,
           gameState: newGameState,
           feedback: newFeedback,
-          attemptHistory: newHistory,
+          attemptHistory: newHistory.map(h => ({
+            colors: h.colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
+            correctPositions: h.correctPositions,
+            incorrectPositions: h.incorrectPositions
+          })),
           statsUpdated: statsUpdated || (newGameState !== 'playing')
         };
         

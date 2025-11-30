@@ -317,7 +317,7 @@ export default function DailyChallengePage() {
       
       if (result.correct) {
         newGameState = 'won';
-        newFeedback = `🎉 Solved in ${attempts + 1}/${maxAttempts}!`;
+        newFeedback = `🎉 Solved in ${attempts + 1} ${attempts + 1 === 1 ? 'attempt' : 'attempts'}!`;
         setGameState('won');
         setFeedback(newFeedback);
         
@@ -459,8 +459,8 @@ export default function DailyChallengePage() {
           >
             💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
           </button>
-          {showHint && (
-            <div className="relative h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in mb-3">
+            {showHint && (
+            <div className="relative h-7 rounded-xl overflow-hidden shadow-lg animate-fade-in mb-3">
               <div 
                 className="absolute inset-0"
                 style={{

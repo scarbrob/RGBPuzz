@@ -16,7 +16,6 @@ export default function LevelPlayPage() {
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [attempts, setAttempts] = useState(0)
-  const [initialAttempts, setInitialAttempts] = useState(0) // Track initial attempts for delta calculation
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
   const [correctPositions, setCorrectPositions] = useState<number[]>([])
@@ -88,24 +87,6 @@ export default function LevelPlayPage() {
     return () => clearInterval(interval)
   }, [timingActive, fastestTimeForDifficulty, startTime, gameState])
 
-  // Save attempts when navigating away
-  useEffect(() => {
-    return () => {
-      // Cleanup: save attempts if the level was played but not yet updated
-      if (user && difficulty && level && attempts > 0 && !statsUpdated) {
-        const totalTime = Date.now() - startTime;
-        updateLevelStats({
-          userId: user.id,
-          difficulty: difficulty as 'easy' | 'medium' | 'hard' | 'insane',
-          level: parseInt(level),
-          attempts,
-          solved: false,
-          solveTime: totalTime,
-        }).catch(err => console.error('Failed to save level attempts on exit:', err));
-      }
-    };
-  }, [user, difficulty, level, attempts, statsUpdated, startTime]);
-
   useEffect(() => {
     const fetchLevel = async () => {
       setIsLoading(true);
@@ -125,9 +106,7 @@ export default function LevelPlayPage() {
             
             // Always restore attempts count if we have a record
             if (dbAttempt) {
-              const savedAttempts = dbAttempt.attempts || 0;
-              setAttempts(savedAttempts);
-              setInitialAttempts(savedAttempts); // Track initial value for delta
+              setAttempts(dbAttempt.attempts || 0);
               
               // Restore attempt history if available
               if (dbAttempt.attemptHistory && dbAttempt.attemptHistory.length > 0) {
@@ -199,7 +178,6 @@ export default function LevelPlayPage() {
           
           setColors(decryptedColors);
           setAttempts(parsed.attempts);
-          setInitialAttempts(parsed.attempts); // Track initial value for delta
           setGameState(parsed.gameState);
           setFeedback(parsed.feedback);
           setTimingActive(false); // Disable timing for restored games
@@ -312,13 +290,11 @@ export default function LevelPlayPage() {
         // Update stats for authenticated users
         if (user && difficulty && level && !statsUpdated) {
           const solveTime = timingActive ? Date.now() - startTime : undefined;
-          const currentAttempts = attempts + 1;
-          const attemptsThisSession = currentAttempts - initialAttempts; // Only send new attempts
           updateLevelStats({
             userId: user.id,
             difficulty,
             level: parseInt(level),
-            attempts: attemptsThisSession,
+            attempts: 1, // Just increment by 1
             solved: true,
             solveTime,
             boardState: colors.map(c => ({ id: c.id, encrypted: c.encrypted })),
@@ -355,14 +331,12 @@ export default function LevelPlayPage() {
         if (user && difficulty && level) {
           // Only save boardState if we have valid encrypted tokens
           const hasValidEncryption = colors.some(c => c.encrypted && c.encrypted.length > 0);
-          const currentAttempts = attempts + 1;
-          const attemptsThisSession = currentAttempts - initialAttempts; // Only send new attempts
           
           updateLevelStats({
             userId: user.id,
             difficulty,
             level: parseInt(level),
-            attempts: attemptsThisSession,
+            attempts: 1, // Just increment by 1
             solved: false,
             boardState: hasValidEncryption ? colors.map(c => ({ id: c.id, encrypted: c.encrypted })) : undefined,
             attemptHistory: newHistory.map(h => ({
@@ -448,22 +422,22 @@ export default function LevelPlayPage() {
       </div>
 
       {/* Color Spectrum Hint */}
-      <div className="mb-6 sm:mb-8" style={{ transition: 'all 1s ease-out' }}>
+      <div className="mb-8" style={{ transition: 'all 1s ease-out' }}>
         <button
           onClick={() => setShowHint(!showHint)}
-          className="w-full text-center text-xs sm:text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-3 transition-opacity font-bold"
+          className="w-full text-center text-sm bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent hover:opacity-80 mb-2 transition-opacity font-bold"
         >
           💡 {showHint ? 'Hide' : 'Show'} Sorting Guide
         </button>
         {showHint && (
-          <div className="relative h-8 sm:h-10 rounded-xl overflow-hidden shadow-lg animate-fade-in">
+          <div className="relative h-7 rounded-xl overflow-hidden shadow-lg animate-fade-in mb-3">
             <div 
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(to right, #000000, #0000ff, #00ff00, #00ffff, #ff0000, #ff00ff, #ffff00, #ffffff)'
               }}
             />
-            <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
+            <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-bold text-white" style={{ textShadow: '0 0 4px black, 0 0 8px black' }}>
               <span>Lowest RGB</span>
               <span>Highest RGB</span>
             </div>

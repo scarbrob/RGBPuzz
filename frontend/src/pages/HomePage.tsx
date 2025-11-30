@@ -61,7 +61,7 @@ export default function HomePage() {
               <span className="text-2xl sm:text-3xl">🎯</span>
               <p className="text-light-text-secondary dark:text-dark-text-secondary">Daily mode has limited attempts - same as the number of colors</p>
             </div>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 md:col-span-2 md:justify-center md:max-w-2xl md:mx-auto">
               <span className="text-2xl sm:text-3xl">⚠️</span>
               <p className="text-light-text-secondary dark:text-dark-text-secondary"><strong>Note:</strong> RGB color values are mathematical. A "darker" value (lower number) may not always appear darker on your screen due to display calibration and color perception.</p>
             </div>

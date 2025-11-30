@@ -502,7 +502,7 @@ export default function DailyChallengePage() {
 
         {feedback && gameState !== 'playing' && (
           <div className={`mb-6 p-4 rounded-xl text-center font-medium animate-slide-in ${
-            gameState === 'won' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/50 animate-pulse-thrice' :
+            gameState === 'won' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/50 animate-pulse-twice' :
             'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/50'
           }`}>
             {feedback}

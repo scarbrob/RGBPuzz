@@ -15,7 +15,6 @@ export default function LevelPlayPage() {
   const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [attempts, setAttempts] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
@@ -90,9 +89,7 @@ export default function LevelPlayPage() {
 
   useEffect(() => {
     const fetchLevel = async () => {
-      if (isInitialLoad) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       if (!difficulty || !level) {
         setIsLoading(false);
         return;
@@ -240,7 +237,6 @@ export default function LevelPlayPage() {
       }
       
       setIsLoading(false);
-      setIsInitialLoad(false);
     }
     
     fetchLevel()

@@ -15,6 +15,7 @@ export default function LevelPlayPage() {
   const { user } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [attempts, setAttempts] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won'>('playing')
   const [feedback, setFeedback] = useState<string>('')
@@ -89,7 +90,9 @@ export default function LevelPlayPage() {
 
   useEffect(() => {
     const fetchLevel = async () => {
-      setIsLoading(true);
+      if (isInitialLoad) {
+        setIsLoading(true);
+      }
       if (!difficulty || !level) {
         setIsLoading(false);
         return;
@@ -237,6 +240,7 @@ export default function LevelPlayPage() {
       }
       
       setIsLoading(false);
+      setIsInitialLoad(false);
     }
     
     fetchLevel()
@@ -385,7 +389,6 @@ export default function LevelPlayPage() {
     const nextLevel = parseInt(level) + 1
     if (nextLevel <= 100) {
       navigate(`/level/${difficulty}/${nextLevel}`)
-      window.location.reload()
     } else {
       navigate('/levels')
     }
@@ -403,7 +406,7 @@ export default function LevelPlayPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto animate-fade-in px-4">
       <div className="mb-4 sm:mb-6">
         <button
           onClick={handleBackToLevels}

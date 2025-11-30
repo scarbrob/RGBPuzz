@@ -141,7 +141,7 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
+    <div className="max-w-6xl mx-auto animate-fade-in px-4">
       <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent pb-2 mb-6 sm:mb-8 text-center">
         Your Statistics
       </h1>

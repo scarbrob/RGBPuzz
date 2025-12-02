@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import HomePage from './pages/HomePage'
@@ -10,6 +10,11 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/TermsOfServicePage'
 import Header from './components/Header'
 import Footer from './components/Footer'
+
+function LevelPlayPageWrapper() {
+  const { difficulty, level } = useParams()
+  return <LevelPlayPage key={`${difficulty}-${level}`} />
+}
 
 function App() {
   return (
@@ -28,7 +33,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/daily" element={<DailyChallengePage />} />
                 <Route path="/levels" element={<LevelsPage />} />
-                <Route path="/level/:difficulty/:level" element={<LevelPlayPage />} />
+                <Route path="/level/:difficulty/:level" element={<LevelPlayPageWrapper />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms" element={<TermsOfServicePage />} />

@@ -83,7 +83,6 @@ export default function LevelsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy')
   const [progress, setProgress] = useState<{ [level: number]: boolean }>({})
   const [loading, setLoading] = useState(true)
-  const [showLevels, setShowLevels] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const navigate = useNavigate()
 
@@ -91,12 +90,9 @@ export default function LevelsPage() {
   useEffect(() => {
     const fetchProgress = async () => {
       setLoading(true)
-      setShowLevels(false)
       const difficultyProgress = await loadProgress(user, selectedDifficulty)
       setProgress(difficultyProgress)
       setLoading(false)
-      // Small delay before triggering animations
-      setTimeout(() => setShowLevels(true), 50)
     }
     fetchProgress()
   }, [user, selectedDifficulty, refreshKey])
@@ -173,28 +169,35 @@ export default function LevelsPage() {
 
       {/* Level Grid */}
       {loading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-2xl">Loading...</div>
+        <div>
+          {/* Mobile: 5 columns = 20 rows */}
+          <div className="sm:hidden space-y-2">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div key={i} className="h-12 bg-gradient-to-r from-light-border via-light-accent/20 to-light-border dark:from-dark-border dark:via-dark-accent/20 dark:to-dark-border rounded-xl animate-pulse"></div>
+            ))}
+          </div>
+          {/* Desktop: 10 columns = 10 rows */}
+          <div className="hidden sm:block space-y-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="h-16 bg-gradient-to-r from-light-border via-light-accent/20 to-light-border dark:from-dark-border dark:via-dark-accent/20 dark:to-dark-border rounded-xl animate-pulse"></div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
-          {levels.map((level, index) => {
-            const row = Math.floor(index / 10);
-            const col = index % 10;
-            const diagonalIndex = row + col;
+          {levels.map((level) => {
             return (
               <button
                 key={level.level}
                 onClick={() => handleLevelClick(level.level, level.locked)}
                 disabled={level.locked}
-                className={`aspect-square p-1 sm:p-2 rounded-lg sm:rounded-xl transition-all flex flex-col items-center justify-center relative ${showLevels ? 'animate-fade-in' : 'opacity-0'} ${
+                className={`aspect-square p-1 sm:p-2 rounded-lg sm:rounded-xl transition-all flex flex-col items-center justify-center relative ${
                   level.locked
                     ? 'bg-light-surface/10 dark:bg-dark-surface/10 opacity-40 cursor-not-allowed'
                     : level.completed
                     ? 'bg-light-accent/20 dark:bg-dark-accent/20 hover:bg-light-accent/30 dark:hover:bg-dark-accent/30 hover:scale-110 hover:shadow-lg'
                     : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-110 hover:-rotate-3 hover:border-2 hover:border-light-accent dark:hover:border-dark-accent'
                 }`}
-                style={{ animationDelay: showLevels ? `${diagonalIndex * 75}ms` : '0ms' }}
               >
               {level.locked && (
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-light-text-secondary dark:text-dark-text-secondary absolute top-0.5 right-0.5 sm:top-1 sm:right-1" fill="currentColor" viewBox="0 0 20 20">
@@ -205,10 +208,7 @@ export default function LevelsPage() {
                 {level.level}
               </div>
               {level.completed && (
-                <div 
-                  className="text-base sm:text-lg md:text-xl mt-0.5 sm:mt-1 text-green-500 animate-bounce-once"
-                  style={{ animationDelay: showLevels ? `${diagonalIndex * 75}ms` : '0ms' }}
-                >
+                <div className="text-base sm:text-lg md:text-xl mt-0.5 sm:mt-1 text-green-500 animate-bounce-once">
                   ✓
                 </div>
               )}

@@ -33,6 +33,19 @@ export default function LevelPlayPage() {
     incorrectPositions: number[];
   }>>([])
 
+  // Reset all state when difficulty or level changes
+  useEffect(() => {
+    setColors([]);
+    setAttempts(0);
+    setGameState('playing');
+    setFeedback('');
+    setCorrectPositions([]);
+    setIncorrectPositions([]);
+    setStatsUpdated(false);
+    setTimingActive(true);
+    setAttemptHistory([]);
+  }, [difficulty, level]);
+
   // Check tutorial status on mount and listen for changes
   useEffect(() => {
     const checkTutorial = () => {

@@ -45,12 +45,12 @@ export default function ColorTile({ id, color, isCorrect = false, isIncorrect = 
       }`}
     >
       {isCorrect && (
-        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-green-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none animate-bounce-once">
+        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-green-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none">
           ✓
         </div>
       )}
       {isIncorrect && (
-        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none animate-bounce-once">
+        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none">
           ✗
         </div>
       )}

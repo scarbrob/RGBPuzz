@@ -6,13 +6,14 @@ import { decryptHex } from '../../../shared/src/crypto'
 import { useAuth } from '../contexts/AuthContext'
 import { updateLevelStats, getUserStats } from '../services/statsService'
 import { API_ENDPOINTS } from '../config/api'
+import { LEVELS_PER_DIFFICULTY } from '../../../shared/src/constants'
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'insane'
 
 export default function LevelPlayPage() {
   const { difficulty, level } = useParams<{ difficulty: Difficulty; level: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [colors, setColors] = useState<Array<{ id: string; hex: string; encrypted: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [attempts, setAttempts] = useState(0)
@@ -32,6 +33,76 @@ export default function LevelPlayPage() {
     correctPositions: number[];
     incorrectPositions: number[];
   }>>([])
+  const [hasValidated, setHasValidated] = useState(false)
+
+  // Validate level access - runs once per level change
+  useEffect(() => {
+    if (hasValidated) return; // Only validate once
+    
+    const validateAccess = async () => {
+      if (!difficulty || !level) return;
+      
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return;
+      }
+      
+      const levelNum = parseInt(level);
+      
+      // Validate level number
+      if (isNaN(levelNum) || levelNum < 1 || levelNum > LEVELS_PER_DIFFICULTY) {
+        navigate('/levels');
+        return;
+      }
+      
+      // Level 1 is always unlocked
+      if (levelNum === 1) {
+        setHasValidated(true);
+        return;
+      }
+      
+      // Check if previous level is completed
+      let isPreviousCompleted = false;
+      
+      if (user) {
+        // Authenticated: check server
+        try {
+          const response = await fetch(API_ENDPOINTS.getLevelProgress(user.id, difficulty));
+          if (response.ok) {
+            const progressData = await response.json();
+            const prevLevel = progressData.find((p: any) => p.level === levelNum - 1);
+            isPreviousCompleted = prevLevel?.solved || false;
+          }
+        } catch (error) {
+          console.error('Failed to check level access:', error);
+          setHasValidated(true);
+          return; // Allow access on error
+        }
+      } else {
+        // Guest: check localStorage
+        const savedProgress = localStorage.getItem('levelProgress');
+        if (savedProgress) {
+          try {
+            const allProgress = JSON.parse(savedProgress);
+            isPreviousCompleted = allProgress[difficulty]?.[levelNum - 1] || false;
+          } catch (error) {
+            console.error('Failed to parse progress:', error);
+          }
+        }
+      }
+      
+      setHasValidated(true);
+      
+      // Redirect if locked
+      if (!isPreviousCompleted) {
+        navigate('/levels');
+      }
+    };
+    
+    validateAccess();
+    // Only depend on difficulty and level - user is captured in closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [difficulty, level, hasValidated, authLoading]);
 
   // Reset all state when difficulty or level changes
   useEffect(() => {
@@ -44,6 +115,7 @@ export default function LevelPlayPage() {
     setStatsUpdated(false);
     setTimingActive(true);
     setAttemptHistory([]);
+    setHasValidated(false); // Reset validation flag
   }, [difficulty, level]);
 
   // Check tutorial status on mount and listen for changes
@@ -396,7 +468,7 @@ export default function LevelPlayPage() {
   const handleNextLevel = () => {
     if (!difficulty || !level) return
     const nextLevel = parseInt(level) + 1
-    if (nextLevel <= 100) {
+    if (nextLevel <= LEVELS_PER_DIFFICULTY) {
       navigate(`/level/${difficulty}/${nextLevel}`)
     } else {
       navigate('/levels')
@@ -519,12 +591,14 @@ export default function LevelPlayPage() {
 
             {gameState === 'won' && (
               <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <button
-                  onClick={handleNextLevel}
-                  className="game-button text-sm sm:text-base"
-                >
-                  Next Level →
-                </button>
+                {parseInt(level || '0') < LEVELS_PER_DIFFICULTY && (
+                  <button
+                    onClick={handleNextLevel}
+                    className="game-button text-sm sm:text-base"
+                  >
+                    Next Level →
+                  </button>
+                )}
                 <button
                   onClick={handleBackToLevels}
                   className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 transition-all text-sm sm:text-base"

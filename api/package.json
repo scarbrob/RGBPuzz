@@ -16,7 +16,7 @@
     "@azure/core-paging": "^1.6.2",
     "@azure/core-rest-pipeline": "^1.22.2",
     "@azure/data-tables": "^13.3.2",
-    "@azure/functions": "^4.0.0",
+    "@azure/functions": "^4.11.2",
     "@types/jsonwebtoken": "^9.0.10",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",

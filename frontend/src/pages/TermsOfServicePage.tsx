@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
 
         <div className="prose prose-sm sm:prose dark:prose-invert max-w-none space-y-6 text-light-text dark:text-dark-text">
           <p className="text-light-text-secondary dark:text-dark-text-secondary">
-            <strong>Last Updated:</strong> November 28, 2025
+            <strong>Last Updated:</strong> March 24, 2026
           </p>
 
           <section>
@@ -40,36 +40,18 @@ export default function TermsOfServicePage() {
             </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
               <li>Play color-matching puzzle challenges</li>
-              <li>Track your progress and statistics</li>
+              <li>Track your progress and statistics locally in your browser</li>
               <li>Participate in daily challenges</li>
-              <li>Save your game progress across devices</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              3. User Accounts
+              3. No Account Required
             </h2>
-            <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2">
-              3.1 Authentication
-            </h3>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
-              Authentication is provided through <strong>Azure Active Directory B2C</strong>. By signing in:
+            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+              RGBPuzz does not require registration or sign-in. All game data is stored locally in your browser. No personal information is collected.
             </p>
-            <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>You receive a unique, anonymous user ID</li>
-              <li>We do not collect or store your email or personal information</li>
-              <li>Your display name is controlled by your Azure B2C account settings</li>
-            </ul>
-
-            <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2 mt-4">
-              3.2 Account Responsibility
-            </h3>
-            <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>You are responsible for maintaining the security of your account</li>
-              <li>You agree not to share your account with others</li>
-              <li>You must notify us of any unauthorized use</li>
-            </ul>
           </section>
 
           <section>
@@ -84,7 +66,6 @@ export default function TermsOfServicePage() {
               <li>Use automated tools or bots to play the game</li>
               <li>Overload or disrupt the Service infrastructure</li>
               <li>Violate any applicable laws or regulations</li>
-              <li>Impersonate others or misrepresent your affiliation</li>
             </ul>
           </section>
 
@@ -126,7 +107,7 @@ export default function TermsOfServicePage() {
               8. Data and Privacy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              Your use of the Service is also governed by our Privacy Policy. We collect minimal data (anonymous user ID and game statistics) and do not sell or share your information.
+              Your use of the Service is also governed by our Privacy Policy. All game data is stored locally in your browser. We do not collect or store any personal information.
             </p>
           </section>
 
@@ -146,16 +127,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              10. Termination
-            </h2>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              We may terminate or suspend your access immediately, without notice, for any violation of these Terms. You may also request account deletion at any time.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              11. Governing Law
+              10. Governing Law
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               These Terms shall be governed by the laws of the United States without regard to conflict of law provisions.
@@ -164,7 +136,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              12. Contact Information
+              11. Contact Information
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               For questions about these Terms, contact:
@@ -179,7 +151,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              13. Entire Agreement
+              12. Entire Agreement
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               These Terms, along with the Privacy Policy, constitute the entire agreement between you and RGBPuzz.
@@ -190,4 +162,3 @@ export default function TermsOfServicePage() {
     </div>
   );
 }
-

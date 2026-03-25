@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import HomePage from './pages/HomePage'
 import DailyChallengePage from './pages/DailyChallengePage'
@@ -19,30 +18,28 @@ function LevelPlayPageWrapper() {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
-            <Header />
-            <main className="flex-grow container mx-auto px-4 py-8">
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/daily" element={<DailyChallengePage />} />
-                <Route path="/levels" element={<LevelsPage />} />
-                <Route path="/level/:difficulty/:level" element={<LevelPlayPageWrapper />} />
-                <Route path="/stats" element={<StatsPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsOfServicePage />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
+          <Header />
+          <main className="flex-grow container mx-auto px-4 py-8">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/daily" element={<DailyChallengePage />} />
+              <Route path="/levels" element={<LevelsPage />} />
+              <Route path="/level/:difficulty/:level" element={<LevelPlayPageWrapper />} />
+              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </BrowserRouter>
     </ThemeProvider>
   )
 }

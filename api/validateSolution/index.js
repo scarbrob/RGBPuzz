@@ -37,12 +37,10 @@ module.exports = async function (context, req) {
             status: response.status || 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://rgbpuzz.com',
                 ...(response.headers || {})
             },
-            body: JSON.stringify(response.jsonBody || response.body)
+            body: response.jsonBody || response.body
         };
     } catch (error) {
         context.log('Error in validateSolution wrapper:', error);
@@ -51,9 +49,9 @@ module.exports = async function (context, req) {
             status: 500,
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
+                'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://rgbpuzz.com'
             },
-            body: { error: 'Internal server error', details: error.message, stack: error.stack }
+            body: { error: 'Internal server error' }
         };
     }
 };

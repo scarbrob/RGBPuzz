@@ -60,7 +60,8 @@ export async function validateSolution(
       });
     }
     
-    const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
+    const salt = process.env.DAILY_CHALLENGE_SALT;
+      if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
     let colors;
     
     // Generate colors based on mode

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Footer() {
   return (
     <footer className="mt-auto border-t border-light-border/30 dark:border-dark-border/30 bg-light-bg dark:bg-dark-bg">
@@ -14,18 +16,18 @@ export default function Footer() {
             >
               Report Issue
             </a>
-            <a
-              href="/privacy"
+            <Link
+              to="/privacy"
               className="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-accent dark:hover:text-dark-accent transition-colors"
             >
               Privacy Policy
-            </a>
-            <a
-              href="/terms"
+            </Link>
+            <Link
+              to="/terms"
               className="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-accent dark:hover:text-dark-accent transition-colors"
             >
               Terms of Service
-            </a>
+            </Link>
           </div>
         </div>
       </div>

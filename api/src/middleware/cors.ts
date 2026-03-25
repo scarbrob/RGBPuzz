@@ -3,7 +3,7 @@
  */
 
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://rgbpuzz.com',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400', // 24 hours
@@ -58,7 +58,7 @@ export function addCorsHeaders(response: any, origin?: string) {
 export function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false;
   
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['https://rgbpuzz.com'];
   
   // If wildcard, allow all
   if (allowedOrigins.includes('*')) {

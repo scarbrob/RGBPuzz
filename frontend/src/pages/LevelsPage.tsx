@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { getLevelProgress } from '../services/statsService'
 import { DIFFICULTY_CONFIG, LEVELS_PER_DIFFICULTY, Difficulty } from '../../../shared/src/constants'
 
 interface DifficultyInfo {
@@ -38,34 +36,8 @@ const difficultyConfig: Record<Difficulty, DifficultyInfo> = {
   }
 }
 
-// Load progress - prioritize server data when user is logged in
-const loadProgress = async (user: any, difficulty: Difficulty): Promise<{ [level: number]: boolean }> => {
-  if (user) {
-    try {
-      const serverProgress = await getLevelProgress(user.id, difficulty)
-      // Convert server progress array format to boolean map
-      const progressMap: { [level: number]: boolean } = {}
-      
-      // serverProgress is now an array of { level, solved, attempts, bestTime, boardState }
-      if (Array.isArray(serverProgress)) {
-        serverProgress.forEach((item: any) => {
-          progressMap[item.level] = item.solved
-        })
-      } else {
-        // Legacy format - object with level keys
-        Object.entries(serverProgress).forEach(([level, data]: [string, any]) => {
-          progressMap[parseInt(level)] = data.solved
-        })
-      }
-      
-      return progressMap
-    } catch (error) {
-      console.error('Failed to load progress from server:', error)
-      // Fall back to localStorage
-    }
-  }
-  
-  // Load from localStorage
+// Load progress from localStorage
+const loadProgress = (difficulty: Difficulty): { [level: number]: boolean } => {
   const saved = localStorage.getItem('levelProgress')
   if (saved) {
     try {
@@ -79,24 +51,20 @@ const loadProgress = async (user: any, difficulty: Difficulty): Promise<{ [level
 }
 
 export default function LevelsPage() {
-  const { user } = useAuth()
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy')
   const [progress, setProgress] = useState<{ [level: number]: boolean }>({})
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
   const navigate = useNavigate()
 
-  // Load progress when user, difficulty, or refreshKey changes
+  // Load progress when difficulty or refreshKey changes
   useEffect(() => {
-    const fetchProgress = async () => {
-      setLoading(true)
-      const difficultyProgress = await loadProgress(user, selectedDifficulty)
-      setProgress(difficultyProgress)
-      setLoading(false)
-    }
-    fetchProgress()
-  }, [user, selectedDifficulty, refreshKey])
-  
+    setLoading(true)
+    const difficultyProgress = loadProgress(selectedDifficulty)
+    setProgress(difficultyProgress)
+    setLoading(false)
+  }, [selectedDifficulty, refreshKey])
+
   // Refresh progress when component becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -104,23 +72,24 @@ export default function LevelsPage() {
         setRefreshKey(prev => prev + 1)
       }
     }
-    
+
+    const handleFocus = () => setRefreshKey(prev => prev + 1)
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    // Also refresh when navigating back to this page
-    window.addEventListener('focus', () => setRefreshKey(prev => prev + 1))
-    
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', () => setRefreshKey(prev => prev + 1))
+      window.removeEventListener('focus', handleFocus)
     }
   }, [])
-  
+
   // Generate levels for the selected difficulty
   const levels = Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) => {
     const level = i + 1
     const completed = progress[level] || false
     const previousCompleted = level === 1 ? true : progress[level - 1] || false
-    
+
     return {
       level,
       difficulty: selectedDifficulty,
@@ -131,7 +100,7 @@ export default function LevelsPage() {
 
   const handleLevelClick = (level: number, locked: boolean) => {
     if (locked) return
-    
+
     // Navigate to level play page
     navigate(`/level/${selectedDifficulty}/${level}`)
   }
@@ -147,7 +116,7 @@ export default function LevelsPage() {
         {(Object.keys(difficultyConfig) as Difficulty[]).map((difficulty) => {
           const config = difficultyConfig[difficulty]
           const isSelected = selectedDifficulty === difficulty
-          
+
           return (
             <button
               key={difficulty}

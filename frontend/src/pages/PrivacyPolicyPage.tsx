@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="prose prose-sm sm:prose dark:prose-invert max-w-none space-y-6 text-light-text dark:text-dark-text">
           <p className="text-light-text-secondary dark:text-dark-text-secondary">
-            <strong>Last Updated:</strong> November 28, 2025
+            <strong>Last Updated:</strong> March 24, 2026
           </p>
 
           <section>
@@ -36,42 +36,35 @@ export default function PrivacyPolicyPage() {
               2. Information We Collect
             </h2>
             <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2">
-              2.1 Authentication Data
+              2.1 Local Data
             </h3>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
-              We use <strong>Microsoft Entra External ID (OAuth)</strong> for authentication. When you sign in:
+              RGBPuzz does not require any account or sign-in. All game data is stored <strong>locally in your browser</strong> using localStorage and sessionStorage. This includes:
             </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>Your <strong>email address</strong> is stored by the identity provider (Microsoft Entra) for authentication purposes</li>
-              <li>We receive a <strong>unique user ID</strong> (random identifier) from your identity provider to link your game data</li>
-              <li>We receive a <strong>display name</strong>, which is used solely to identify your account in the header of the application</li>
-              <li><strong>Important:</strong> OAuth providers (Google, Microsoft, etc.) may automatically populate your display name with your real name from their systems. You are responsible for reviewing and changing this display name if you do not wish to use your real name. We are not responsible for the information you choose to submit.</li>
-              <li>You can change your display name at any time through your identity provider's account settings</li>
-              <li>We <strong>do not</strong> receive your password or any credentials</li>
-              <li>We <strong>do not</strong> have access to your social media profiles, contacts, or any other data from your identity provider</li>
-            </ul>
-
-            <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2 mt-4">
-              2.2 Game Data
-            </h3>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
-              We store the following game-related data linked to your unique ID:
-            </p>
-            <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>Game progress (levels completed, attempts, solve times)</li>
+              <li>Game progress (levels completed, attempts)</li>
               <li>Daily challenge progress and streaks</li>
-              <li>Board states (current puzzle configurations)</li>
               <li>Game statistics and performance metrics</li>
+              <li>Theme preferences (dark/light mode)</li>
             </ul>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary mt-3">
+              <strong>Important:</strong> This data never leaves your browser. We do not collect, transmit, or store any personal information on our servers.
+            </p>
 
             <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2 mt-4">
-              2.3 Technical Data
+              2.2 Server Communication
             </h3>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+              The game communicates with our API server only to:
+            </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>Browser local storage for theme preferences and game state</li>
-              <li>Azure Application Insights for error logging and performance monitoring</li>
-              <li>No cookies are used for tracking</li>
+              <li>Fetch daily challenge puzzles</li>
+              <li>Fetch level puzzles</li>
+              <li>Validate puzzle solutions</li>
             </ul>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2">
+              No personally identifiable information is sent with these requests.
+            </p>
           </section>
 
           <section>
@@ -79,11 +72,9 @@ export default function PrivacyPolicyPage() {
               3. How We Use Your Information
             </h2>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li>To save your game progress across devices</li>
-              <li>To calculate and display your statistics</li>
-              <li>To provide daily challenges and track streaks</li>
-              <li>To monitor and improve game performance</li>
-              <li>To fix bugs and technical issues</li>
+              <li>To generate and validate puzzle challenges</li>
+              <li>To display your locally stored statistics</li>
+              <li>To remember your theme preference</li>
             </ul>
           </section>
 
@@ -92,7 +83,7 @@ export default function PrivacyPolicyPage() {
               4. Data Storage
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              Your game data is stored in <strong>Azure Table Storage</strong> in the United States. All data is associated only with your anonymous user ID—never with personal information.
+              All game data is stored locally in your browser. Clearing your browser data will remove your game progress. We do not store any user data on our servers.
             </p>
           </section>
 
@@ -101,12 +92,8 @@ export default function PrivacyPolicyPage() {
               5. Data Sharing
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              We <strong>do not sell, trade, or share</strong> your data with third parties. The only external service we use is:
+              We <strong>do not sell, trade, or share</strong> any data with third parties. The only external service involved is <strong>Azure Static Web Apps</strong> for hosting the application.
             </p>
-            <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li><strong>Microsoft Azure B2C</strong> for authentication (they handle OAuth securely)</li>
-              <li><strong>Azure Application Insights</strong> for error monitoring (Microsoft-hosted)</li>
-            </ul>
           </section>
 
           <section>
@@ -114,36 +101,26 @@ export default function PrivacyPolicyPage() {
               6. Your Rights
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
-              You have the right to:
+              Since all data is stored locally in your browser, you have full control:
             </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li><strong>Access</strong> your data (view your stats in the game)</li>
-              <li><strong>Delete</strong> your account and all associated data (<a href="https://github.com/scarbrob/RGBPuzz/issues" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline">file an issue</a>)</li>
-              <li><strong>Export</strong> your data (<a href="https://github.com/scarbrob/RGBPuzz/issues" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline">file an issue</a> for a data dump)</li>
+              <li><strong>View</strong> your data via the Stats page</li>
+              <li><strong>Delete</strong> your data by clearing your browser's localStorage</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              7. Data Retention
+              7. Children's Privacy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              We retain your game data indefinitely to preserve your progress. If you want your data deleted, <a href="https://github.com/scarbrob/RGBPuzz/issues" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline">file an issue</a> and we'll remove it within 30 days.
+              RGBPuzz does not collect any personal data from anyone, including children under 13.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              8. Children's Privacy
-            </h2>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              RGBPuzz does not knowingly collect data from children under 13. If you believe a child has created an account, please <a href="https://github.com/scarbrob/RGBPuzz/issues" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline">file an issue</a>.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              9. Changes to This Policy
+              8. Changes to This Policy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               We may update this privacy policy from time to time. Changes will be posted on this page with an updated "Last Updated" date.
@@ -152,10 +129,10 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
-              10. Contact
+              9. Contact
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              For questions about this privacy policy or to request data deletion, contact:
+              For questions about this privacy policy, contact:
             </p>
             <p className="text-light-accent dark:text-dark-accent mt-2">
               Benjamin Scarbrough<br />

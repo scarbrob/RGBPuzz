@@ -11,7 +11,7 @@ interface ColorTileProps {
   size?: number
 }
 
-export default function ColorTile({ id, color, isCorrect = false, isIncorrect = false, locked = false, size }: ColorTileProps) {
+export default function ColorTile({ id, color, index, isCorrect = false, isIncorrect = false, locked = false, size }: ColorTileProps) {
   const {
     attributes,
     listeners,
@@ -35,6 +35,7 @@ export default function ColorTile({ id, color, isCorrect = false, isIncorrect = 
     <button
       ref={setNodeRef}
       style={style}
+      aria-label={`Color tile ${index !== undefined ? index + 1 : ''}, ${color}`}
       {...attributes}
       {...listeners}
       className={`color-tile relative group ${

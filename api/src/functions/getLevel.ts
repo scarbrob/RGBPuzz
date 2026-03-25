@@ -7,7 +7,7 @@ import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
 /**
  * GET /api/level?difficulty={difficulty}&level={level}
  * Returns a specific level challenge
- * Difficulty: easy (3 colors), medium (5), hard (7), insane (9)
+ * Difficulty: easy (3 colors), medium (5), hard (7), insane (10)
  * Level: 1-100 for each difficulty
  */
 export async function getLevel(
@@ -57,7 +57,8 @@ export async function getLevel(
       });
     }
     
-    const salt = process.env.DAILY_CHALLENGE_SALT || 'default-salt';
+    const salt = process.env.DAILY_CHALLENGE_SALT;
+      if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
     const colors = generateLevelColors(difficulty, level);
     
     const colorTokens = colors.map((color, index) => {

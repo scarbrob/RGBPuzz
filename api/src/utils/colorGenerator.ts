@@ -86,7 +86,7 @@ export function deterministicShuffle<T>(array: T[], seed: string): T[] {
   for (let i = shuffled.length - 1; i > 0; i--) {
     // Use hash bytes to generate deterministic "random" index
     const randomByte = seedHash[i % seedHash.length];
-    const j = Math.floor((randomByte / 255) * (i + 1));
+    const j = Math.floor((randomByte / 256) * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   

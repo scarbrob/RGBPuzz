@@ -4,12 +4,14 @@
   "private": true,
   "description": "Daily color-sorting puzzle game",
   "scripts": {
-    "install:all": "cd frontend && npm install && cd ../api && npm install && cd ../shared && npm install",
+    "install:all": "cd shared && npm install && cd ../api && npm install && cd ../frontend && npm install",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:api": "cd api && npm run start",
+    "build:shared": "cd shared && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "build:api": "cd api && npm run build",
-    "clean": "Remove-Item -Recurse -Force frontend/node_modules, api/node_modules, shared/node_modules, node_modules -ErrorAction SilentlyContinue"
+    "build:all": "cd shared && npm run build && cd ../api && npm run build && cd ../frontend && npm run build",
+    "clean": "rm -rf frontend/node_modules api/node_modules shared/node_modules node_modules"
   },
   "keywords": [
     "puzzle",

@@ -3,6 +3,7 @@ import { generateDailySeed, generateColorsFromSeed, generateLevelColors, createC
 import { validateTokenIds, validateDifficulty, validateLevel, validateDate } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
+import { DAILY_CHALLENGE_CONFIG } from '../../../shared/src/constants';
 
 interface ValidationRequest {
   date?: string;
@@ -110,7 +111,7 @@ export async function validateSolution(
       
       context.log('Validating solution for date:', date);
       
-      const colorCount = 5;
+      const colorCount = DAILY_CHALLENGE_CONFIG.colorCount;
       const seed = generateDailySeed(date, salt);
       colors = generateColorsFromSeed(seed, colorCount);
     }
@@ -158,7 +159,7 @@ export async function validateSolution(
       },
     });
   } catch (error) {
-    context.log('Error validating solution:', error);
+    context.error('Error validating solution:', error);
     return addCorsHeaders({
       status: 500,
       jsonBody: { error: 'Internal server error' },

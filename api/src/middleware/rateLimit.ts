@@ -111,29 +111,17 @@ export const rateLimitConfigs = {
     windowMs: 60000, // 1 minute
     maxRequests: 20,  // 20 requests per minute
   },
-  
-  // More lenient for stats queries
-  getUserStats: {
-    windowMs: 60000, // 1 minute
-    maxRequests: 60,  // 60 requests per minute
-  },
-  
+
   // Moderate limit for challenges
   dailyChallenge: {
     windowMs: 60000, // 1 minute
     maxRequests: 30,  // 30 requests per minute
   },
-  
+
   // Moderate limit for level requests
   getLevel: {
     windowMs: 60000, // 1 minute
     maxRequests: 100, // 100 requests per minute
-  },
-  
-  // Strict limit for stat updates
-  updateStats: {
-    windowMs: 60000, // 1 minute
-    maxRequests: 30,  // 30 requests per minute
   },
 };
 

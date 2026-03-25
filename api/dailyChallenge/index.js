@@ -2,7 +2,6 @@ const path = require('path');
 
 module.exports = async function (context, req) {
     try {
-        // Create mock HttpRequest object for v4 function signature
         const mockRequest = {
             method: req.method || 'GET',
             json: async () => req.body,
@@ -11,13 +10,20 @@ module.exports = async function (context, req) {
             query: {
                 get: (key) => req.query[key] || null
             },
+            params: req.params,
             headers: {
-                get: (key) => req.headers[key] || req.headers[key.toLowerCase()] || null
-            },
-            params: req.params
+                get: (key) => {
+                    if (!req.headers) return null;
+                    const lowerKey = key.toLowerCase();
+                    for (const [k, v] of Object.entries(req.headers)) {
+                        if (k.toLowerCase() === lowerKey) return v;
+                    }
+                    return null;
+                }
+            }
         };
-        
-        const { getDailyChallenge } = require(path.join(__dirname, '..', 'dist', 'functions', 'dailyChallenge'));
+
+        const { getDailyChallenge } = require(path.join(__dirname, '..', 'dist', 'api', 'src', 'functions', 'dailyChallenge'));
         const response = await getDailyChallenge(mockRequest, context);
         context.res = {
             status: response.status || 200,
@@ -25,9 +31,10 @@ module.exports = async function (context, req) {
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log('Error in dailyChallenge:', error);
+        context.log('Error in dailyChallenge wrapper:', error);
         context.res = {
             status: 500,
+            headers: { 'Content-Type': 'application/json' },
             body: { error: 'Internal server error' }
         };
     }

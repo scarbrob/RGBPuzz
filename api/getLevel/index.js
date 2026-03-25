@@ -2,7 +2,6 @@ const path = require('path');
 
 module.exports = async function (context, req) {
     try {
-        // Create mock HttpRequest object for v4 function signature
         const mockRequest = {
             method: req.method || 'GET',
             json: async () => req.body,
@@ -23,8 +22,8 @@ module.exports = async function (context, req) {
                 }
             }
         };
-        
-        const { getLevel } = require(path.join(__dirname, '..', 'dist', 'functions', 'getLevel'));
+
+        const { getLevel } = require(path.join(__dirname, '..', 'dist', 'api', 'src', 'functions', 'getLevel'));
         const response = await getLevel(mockRequest, context);
         context.res = {
             status: response.status || 200,
@@ -32,9 +31,10 @@ module.exports = async function (context, req) {
             body: response.jsonBody || response.body
         };
     } catch (error) {
-        context.log('Error in getLevel:', error);
+        context.log('Error in getLevel wrapper:', error);
         context.res = {
             status: 500,
+            headers: { 'Content-Type': 'application/json' },
             body: { error: 'Internal server error' }
         };
     }

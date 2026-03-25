@@ -1,11 +1,6 @@
-import { createHash, randomBytes } from 'crypto';
-import { DIFFICULTY_CONFIG } from '../constants';
-
-interface RGBColor {
-  r: number;
-  g: number;
-  b: number;
-}
+import { createHash } from 'crypto';
+import { DIFFICULTY_CONFIG } from '../../../shared/src/constants';
+import { RGBColor } from '../../../shared/src/types';
 
 /**
  * Generate a deterministic seed from a date string
@@ -91,23 +86,6 @@ export function deterministicShuffle<T>(array: T[], seed: string): T[] {
   }
   
   return shuffled;
-}
-
-/**
- * Generate random colors (for level mode)
- */
-export function generateRandomColors(count: number, theme?: 'reds' | 'greens' | 'blues'): RGBColor[] {
-  const colors: RGBColor[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    const r = theme === 'reds' ? 150 + Math.floor(Math.random() * 105) : Math.floor(Math.random() * 256);
-    const g = theme === 'greens' ? 150 + Math.floor(Math.random() * 105) : Math.floor(Math.random() * 256);
-    const b = theme === 'blues' ? 150 + Math.floor(Math.random() * 105) : Math.floor(Math.random() * 256);
-    
-    colors.push({ r, g, b });
-  }
-  
-  return colors;
 }
 
 /**

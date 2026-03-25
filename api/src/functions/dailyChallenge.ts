@@ -3,7 +3,7 @@ import { generateDailySeed, generateColorsFromSeed, createColorToken, encryptHex
 import { validateDate } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
-import { DAILY_CHALLENGE_CONFIG } from '../constants';
+import { DAILY_CHALLENGE_CONFIG } from '../../../shared/src/constants';
 
 /**
  * GET /api/daily-challenge?date=YYYY-MM-DD

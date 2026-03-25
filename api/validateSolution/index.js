@@ -2,11 +2,6 @@ const path = require('path');
 
 module.exports = async function (context, req) {
     try {
-        context.log('validateSolution wrapper called');
-        context.log('Request body:', JSON.stringify(req.body));
-        
-        // In v3 model, the body is already parsed in req.body
-        // We need to create a mock HttpRequest object for the v4 function
         const mockRequest = {
             method: req.method || 'POST',
             json: async () => req.body,
@@ -27,30 +22,19 @@ module.exports = async function (context, req) {
                 }
             }
         };
-        
-        const { validateSolution } = require(path.join(__dirname, '..', 'dist', 'functions', 'validateSolution'));
+
+        const { validateSolution } = require(path.join(__dirname, '..', 'dist', 'api', 'src', 'functions', 'validateSolution'));
         const response = await validateSolution(mockRequest, context);
-        
-        context.log('Response from validateSolution:', JSON.stringify(response));
-        
         context.res = {
             status: response.status || 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://rgbpuzz.com',
-                ...(response.headers || {})
-            },
+            headers: response.headers || {},
             body: response.jsonBody || response.body
         };
     } catch (error) {
         context.log('Error in validateSolution wrapper:', error);
-        context.log('Stack:', error.stack);
         context.res = {
             status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://rgbpuzz.com'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: { error: 'Internal server error' }
         };
     }

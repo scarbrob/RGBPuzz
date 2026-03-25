@@ -16,11 +16,6 @@ export type Difficulty = typeof DIFFICULTY_LEVELS[number];
 export const LEVELS_PER_DIFFICULTY = 100;
 
 /**
- * Total number of levels across all difficulties
- */
-export const TOTAL_LEVELS = LEVELS_PER_DIFFICULTY * DIFFICULTY_LEVELS.length;
-
-/**
  * Configuration for each difficulty level
  */
 export const DIFFICULTY_CONFIG = {
@@ -55,16 +50,3 @@ export const DAILY_CHALLENGE_CONFIG = {
   colorCount: 5,
   maxAttempts: 5,
 } as const;
-
-// ==================== VALIDATION ====================
-
-/**
- * User ID validation regex
- * Allows alphanumeric, periods, underscores, and hyphens
- */
-export const USER_ID_REGEX = /^[a-zA-Z0-9._-]{1,128}$/;
-
-/**
- * Email validation regex (basic)
- */
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

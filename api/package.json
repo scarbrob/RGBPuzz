@@ -2,7 +2,7 @@
   "name": "rgbpuzz-api",
   "version": "0.1.0",
   "description": "Azure Functions API for RGBPuzz",
-  "main": "dist/index.js",
+  "main": "dist/api/src/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

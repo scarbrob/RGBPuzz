@@ -7,19 +7,19 @@ export default function HomePage() {
   return (
     <div className="max-w-5xl mx-auto animate-fade-in px-4">
       {/* Hero Section — dramatic, color-forward */}
-      <div className="text-center pt-8 sm:pt-12 md:pt-16 mb-16 sm:mb-20 relative overflow-hidden">
+      <div className="text-center pt-8 sm:pt-12 md:pt-16 mb-16 sm:mb-20 relative">
         {/* Floating color orbs behind title */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           {heroColors.map((color, i) => (
             <div
               key={i}
               className="absolute rounded-full animate-float"
               style={{
-                width: `${60 + i * 15}px`,
-                height: `${60 + i * 15}px`,
-                background: `radial-gradient(circle, ${color}30, transparent 70%)`,
-                left: `${15 + i * 16}%`,
-                top: `${20 + (i % 3) * 20}%`,
+                width: `${40 + i * 10}px`,
+                height: `${40 + i * 10}px`,
+                background: `radial-gradient(circle, ${color}25, transparent 70%)`,
+                left: `${20 + i * 14}%`,
+                top: `${25 + (i % 3) * 18}%`,
                 animationDelay: `${i * 0.6}s`,
                 animationDuration: `${3 + i * 0.5}s`,
               }}

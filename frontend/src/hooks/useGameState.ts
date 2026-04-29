@@ -89,7 +89,15 @@ export function useGameState(options: UseGameStateOptions) {
     const savedState = sessionStorage.getItem(sessionKey)
     if (!savedState) return false
 
-    const parsed: SessionState = JSON.parse(savedState)
+    let parsed: SessionState
+    try {
+      parsed = JSON.parse(savedState) as SessionState
+    } catch {
+      // Corrupted state — clear it and start fresh
+      sessionStorage.removeItem(sessionKey)
+      return false
+    }
+
     const decryptedColors = decryptColors(parsed.colors)
 
     setColors(decryptedColors)
@@ -103,9 +111,12 @@ export function useGameState(options: UseGameStateOptions) {
       setAttemptHistory(decryptHistory(parsed.attemptHistory))
     }
 
-    if (parsed.gameState !== 'playing') {
+    if (parsed.gameState === 'won') {
+      // On win the displayed order IS the correct order
       setCorrectPositions(decryptedColors.map((_, idx) => idx))
     } else if (parsed.attemptHistory?.length > 0) {
+      // For 'lost' or 'playing', show feedback from last attempt
+      // (don't fake-mark all positions correct on lost state)
       const last = parsed.attemptHistory[parsed.attemptHistory.length - 1]
       setCorrectPositions(last.correctPositions || [])
       setIncorrectPositions(last.incorrectPositions || [])

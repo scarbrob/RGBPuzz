@@ -151,7 +151,8 @@ export async function validateSolution(
       .map(item => item.index);
     
     // Check if user's order matches
-    const correct = JSON.stringify(submittedIndices) === JSON.stringify(correctOrder);
+    const correct = submittedIndices.length === correctOrder.length
+      && submittedIndices.every((v, i) => v === correctOrder[i]);
     
     // Find which positions are correct
     const correctPositions = submittedIndices

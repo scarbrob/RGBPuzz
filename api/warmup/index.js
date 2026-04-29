@@ -1,34 +1,33 @@
-const https = require('https');
-
 /**
  * Timer-triggered warmup function.
- * Runs every 4 minutes to keep HTTP-triggered functions warm.
- * The minimumElasticInstanceCount=1 handles infrastructure warmth,
- * but this ensures the function code itself stays loaded in memory.
+ *
+ * Purpose: keep the Node.js process and our compiled function modules
+ * resident in memory so HTTP-triggered functions don't pay a cold JIT/module-load
+ * cost on the first request after an idle period.
+ *
+ * We deliberately do NOT make HTTP calls to our own endpoints because:
+ *   - It pollutes the IP-based rate limit store with our own egress IP
+ *   - It bypasses any future caching layer
+ *   - The infrastructure warmth is already handled by minimumElasticInstanceCount
+ *
+ * Instead we just require() the compiled function modules. This is enough to
+ * keep V8 from evicting them and keep require.cache populated.
  */
 module.exports = async function (context, timer) {
     if (timer.isPastDue) {
         context.log('Warmup timer is past due');
     }
 
-    const endpoints = [
-        'https://api.rgbpuzz.com/api/daily-challenge',
-        'https://api.rgbpuzz.com/api/spectrum-daily',
-    ];
-
-    for (const url of endpoints) {
-        try {
-            await new Promise((resolve, reject) => {
-                const req = https.get(url, { timeout: 5000 }, (res) => {
-                    res.on('data', () => {});
-                    res.on('end', resolve);
-                });
-                req.on('error', reject);
-                req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-            });
-            context.log(`Warmup: ${url} OK`);
-        } catch (err) {
-            context.log(`Warmup: ${url} failed: ${err.message}`);
-        }
+    try {
+        // Touch the compiled modules so they stay in require.cache and V8's hot set.
+        // Paths are relative to this file: api/warmup/ -> api/dist/api/src/functions/
+        require('../dist/api/src/functions/dailyChallenge');
+        require('../dist/api/src/functions/spectrumDaily');
+        require('../dist/api/src/functions/getLevel');
+        require('../dist/api/src/functions/getSpectrumLevel');
+        require('../dist/api/src/functions/validateSolution');
+        context.log('Warmup: modules touched');
+    } catch (err) {
+        context.log(`Warmup: module touch failed: ${err.message}`);
     }
 };

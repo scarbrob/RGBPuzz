@@ -56,6 +56,7 @@ export default function HomePage() {
 
         <p className="text-lg sm:text-xl md:text-2xl text-light-text-secondary dark:text-dark-text-secondary max-w-lg mx-auto leading-relaxed">
           Sort colors by their <em className="text-light-accent dark:text-dark-accent not-italic font-semibold">hidden</em> RGB values.
+          {' '}
           <br className="hidden sm:block" />
           <span className="text-light-text-secondary/70 dark:text-dark-text-secondary/70">Can you trust your eyes?</span>
         </p>

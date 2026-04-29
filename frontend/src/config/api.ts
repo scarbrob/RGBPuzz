@@ -12,4 +12,6 @@ export const API_ENDPOINTS = {
   dailyChallenge: (date: string) => `${API_BASE_URL}/daily-challenge?date=${date}`,
   validateSolution: () => `${API_BASE_URL}/validate-solution`,
   getLevel: (difficulty: string, level: number) => `${API_BASE_URL}/level?difficulty=${difficulty}&level=${level}`,
+  getSpectrumLevel: (difficulty: string, level: number) => `${API_BASE_URL}/spectrum-level?difficulty=${difficulty}&level=${level}`,
+  spectrumDaily: (date: string) => `${API_BASE_URL}/spectrum-daily?date=${date}`,
 } as const;

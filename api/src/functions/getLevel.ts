@@ -58,7 +58,7 @@ export async function getLevel(
     }
     
     const salt = process.env.DAILY_CHALLENGE_SALT;
-      if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
+    if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
     const colors = generateLevelColors(difficulty, level);
     
     const colorTokens = colors.map((color, index) => {

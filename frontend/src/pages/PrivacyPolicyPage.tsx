@@ -13,29 +13,29 @@ export default function PrivacyPolicyPage() {
           Back to Game
         </Link>
 
-        <h1 className="text-3xl sm:text-4xl font-bold text-light-text dark:text-dark-text mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold text-light-text-primary dark:text-dark-text-primary mb-6">
           Privacy Policy
         </h1>
 
-        <div className="prose prose-sm sm:prose dark:prose-invert max-w-none space-y-6 text-light-text dark:text-dark-text">
+        <div className="prose prose-sm sm:prose dark:prose-invert max-w-none space-y-6 text-light-text-primary dark:text-dark-text-primary">
           <p className="text-light-text-secondary dark:text-dark-text-secondary">
-            <strong>Last Updated:</strong> March 24, 2026
+            <strong>Last Updated:</strong> April 28, 2026
           </p>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               1. Introduction
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              RGBPuzz is a personal project created by Benjamin Scarbrough. This privacy policy explains how we handle your data when you use our color puzzle game.
+              RGBPuzz ("we", "our", or "us") operates rgbpuzz.com. This privacy policy explains how we handle your data when you use our color puzzle game.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               2. Information We Collect
             </h2>
-            <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2">
+            <h3 className="text-xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
               2.1 Local Data
             </h3>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
               <strong>Important:</strong> This data never leaves your browser. We do not collect, transmit, or store any personal information on our servers.
             </p>
 
-            <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mb-2 mt-4">
+            <h3 className="text-xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-2 mt-4">
               2.2 Server Communication
             </h3>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               3. How We Use Your Information
             </h2>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               4. Data Storage
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -88,7 +88,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               5. Data Sharing
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               6. Your Rights
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               7. Children's Privacy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               8. Changes to This Policy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -128,16 +128,16 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text mb-3">
+            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
               9. Contact
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               For questions about this privacy policy, contact:
             </p>
             <p className="text-light-accent dark:text-dark-accent mt-2">
-              Benjamin Scarbrough<br />
-              <a href="https://github.com/scarbrob/RGBPuzz/issues" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                GitHub Issues
+              RGBPuzz<br />
+              <a href="mailto:legal@rgbpuzz.com" target="_blank" rel="noopener noreferrer" className="hover:underline">
+                legal@rgbpuzz.com
               </a>
             </p>
           </section>

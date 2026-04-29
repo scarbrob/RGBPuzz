@@ -47,7 +47,7 @@ export async function getDailyChallenge(
     context.log('Generating challenge for date:', today);
     
     const salt = process.env.DAILY_CHALLENGE_SALT;
-      if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
+    if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
     const colorCount = DAILY_CHALLENGE_CONFIG.colorCount;
     
     // Generate deterministic colors for today
@@ -77,7 +77,7 @@ export async function getDailyChallenge(
       jsonBody: {
         date: today,
         colorTokens: shuffled,
-        maxAttempts: colorCount,
+        maxAttempts: DAILY_CHALLENGE_CONFIG.maxAttempts,
       },
     });
   } catch (error) {

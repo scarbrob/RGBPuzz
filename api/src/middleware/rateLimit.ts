@@ -39,7 +39,13 @@ export function checkRateLimit(
   // Get or create entry
   let entry = rateLimitStore.get(key);
   
-  if (!entry || entry.resetTime < now) {
+  // Clean up expired entry
+  if (entry && entry.resetTime < now) {
+    rateLimitStore.delete(key);
+    entry = undefined;
+  }
+  
+  if (!entry) {
     // Create new entry
     entry = {
       count: 1,

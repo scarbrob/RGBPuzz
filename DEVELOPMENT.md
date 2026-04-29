@@ -4,44 +4,39 @@
 
 ### Production Status
 
-**RGBPuzz is production-ready!**
-- ✅ API deployed to **rgbpuzz.com/api** (custom domain configured)
-- ✅ All features complete (Daily + 400 Levels)
-- ✅ Authentication working (Microsoft + Google)
-- ✅ Statistics tracking live
-- 🚀 Ready for frontend deployment to **rgbpuzz.com**
+**RGBPuzz is deployed in production!**
+- ✅ API deployed at **api.rgbpuzz.com/api** (Azure Functions)
+- ✅ Frontend deployed at **rgbpuzz.com** (Azure Static Web Apps)
+- ✅ All features complete (Daily Challenge + 400 Levels)
+- ✅ Statistics tracking (local storage)
+- ✅ No authentication required — all data stored locally
 
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Azure Functions Core Tools v4 (for local development)
+- Azure Functions Core Tools v4 *(optional, for local API development)*
 - Git
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   cd c:\Repos
-   git clone <your-repo-url> rgbpuzz
-   cd rgbpuzz
+   git clone https://github.com/scarbrob/RGBPuzz.git
+   cd RGBPuzz
    ```
 
 2. **Install dependencies**
    ```bash
-   npm run install:all
-   ```
-
-   Or manually:
-   ```bash
-   cd shared && npm install
+   cd shared && npm install && npm run build
    cd ../frontend && npm install
    cd ../api && npm install
    ```
 
-3. **Build shared types**
+3. **Configure API environment**
    ```bash
-   cd shared
-   npm run build
+   cd api
+   cp local.settings.example.json local.settings.json
+   # Edit local.settings.json — set DAILY_CHALLENGE_SALT to any string for dev
    ```
 
 ### Running Locally
@@ -53,7 +48,8 @@ cd frontend
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at `http://localhost:3000`.
+The Vite dev server proxies `/api` requests to `http://localhost:7071`.
 
 #### API Development Server
 
@@ -62,7 +58,9 @@ cd api
 npm run start
 ```
 
-The API will be available at `http://localhost:7071`
+The API will be available at `http://localhost:7071`.
+
+> **Note:** The frontend can run without the API — it will show an error message if the API is unavailable.
 
 ### Project Structure
 
@@ -70,46 +68,49 @@ The API will be available at `http://localhost:7071`
 rgbpuzz/
 ├── frontend/               # React app
 │   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── App.tsx        # Main app component
+│   │   ├── components/    # ColorBoard, ColorTile, Header, Footer, etc.
+│   │   ├── pages/         # HomePage, DailyChallengePage, LevelsPage, etc.
+│   │   ├── contexts/      # ThemeContext
+│   │   ├── config/        # API configuration
+│   │   ├── App.tsx        # Routes & layout
 │   │   └── main.tsx       # Entry point
 │   └── package.json
 │
-├── api/                   # Azure Functions
+├── api/                   # Azure Functions (v3 model)
 │   ├── src/
-│   │   ├── functions/    # HTTP triggered functions
-│   │   └── utils/        # Helper utilities
+│   │   ├── functions/    # dailyChallenge, validateSolution, getLevel
+│   │   ├── middleware/   # cors, rateLimit, validation
+│   │   └── utils/        # colorGenerator
+│   ├── dailyChallenge/   # v3 function wrapper
+│   ├── validateSolution/ # v3 function wrapper
+│   ├── getLevel/         # v3 function wrapper
 │   └── package.json
 │
-├── shared/               # Shared TypeScript types
-│   ├── src/
-│   │   ├── types.ts     # Interface definitions
-│   │   └── utils.ts     # Shared utilities
-│   └── package.json
+├── shared/               # Shared TypeScript code
+│   └── src/
+│       ├── types.ts     # RGBColor interface
+│       ├── constants.ts # Game config (difficulties, level count)
+│       └── crypto.ts    # Client-side color decryption
 │
-└── infrastructure/       # Azure deployment configs
+└── .github/workflows/   # CI/CD pipelines
 ```
 
 ### Available Scripts
 
-#### Root Level
-- `npm run install:all` - Install all dependencies
-- `npm run dev:frontend` - Start frontend dev server
-- `npm run dev:api` - Start API dev server
-- `npm run build:frontend` - Build frontend for production
-- `npm run build:api` - Build API for production
-
 #### Frontend
-- `npm run dev` - Start dev server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+- `npm run dev` — Start dev server (port 3000)
+- `npm run build` — TypeScript check + Vite production build
+- `npm run preview` — Preview production build
+- `npm run lint` — Run ESLint
 
 #### API
-- `npm run build` - Compile TypeScript
-- `npm run watch` - Watch mode compilation
-- `npm run start` - Start Azure Functions locally
+- `npm run build` — Compile TypeScript
+- `npm run watch` — Watch mode compilation
+- `npm run start` — Build + start Azure Functions locally
+
+#### Shared
+- `npm run build` — Compile TypeScript
+- `npm run watch` — Watch mode compilation
 
 ## Game Mechanics
 
@@ -117,47 +118,68 @@ rgbpuzz/
 - New puzzle generated daily at midnight UTC
 - 5 colors to sort by RGB value
 - 5 attempts maximum
-- Results shareable to social media
+- Same puzzle for all users worldwide (deterministic from date + salt)
+- Results shareable (Wordle-style emoji grid)
 
 ### Level Mode
-- Progressive difficulty (Easy → Expert)
-- Themed color challenges (Reds, Blues, Greens, Mixed)
-- Star ratings based on performance
-- 3 stars = solved in minimum attempts
+- 400 levels: 100 per difficulty (Easy, Medium, Hard, Insane)
+- Easy: 3 colors, 10 attempts
+- Medium: 5 colors, 10 attempts
+- Hard: 7 colors, 15 attempts
+- Insane: 10 colors, 20 attempts
+- Colors get progressively closer in RGB value as levels increase
+- Sequential unlock (must complete level N to play level N+1)
 
 ### Color Ordering
-- Colors sorted by RGB value: `R * 65536 + G * 256 + B`
+Colors are sorted by RGB value: `R × 65536 + G × 256 + B`
 - Lower values on left, higher on right
 - Drag and drop interface for reordering
 
+### Security Model
+Colors are generated server-side from deterministic seeds. The client receives:
+- Encrypted hex color (XOR cipher with token-derived key) for display
+- Cryptographic hash token for validation
+
+The actual RGB values are **never** sent to the client, preventing cheating via network inspection or DevTools.
+
 ## API Endpoints
 
-**Base URL**: https://rgbpuzz.com/api (Production)  
-**Local URL**: http://localhost:7071/api (Development)
+**Production**: `https://api.rgbpuzz.com/api`
+**Local**: `http://localhost:7071/api`
 
-### `GET /api/daily-challenge`
-Returns today's challenge with shuffled color tokens.
+### `GET /api/daily-challenge?date=YYYY-MM-DD`
+Returns today's challenge with shuffled, encrypted color tokens.
 
 **Response:**
 ```json
 {
-  "date": "2025-11-28",
+  "date": "2026-04-28",
   "colorTokens": [
-    { "id": "color-0", "encrypted": "U2FsdGVkX1...", "hex": "#ff6b6b" }
+    { "id": "a1b2c3d4e5f6a7b8", "encrypted": "U2FsdGVk..." }
   ],
   "maxAttempts": 5
 }
 ```
 
 ### `POST /api/validate-solution`
-Validates user's color ordering (Daily or Level mode).
+Validates user's color ordering.
 
-**Request:**
+**Request (daily):**
 ```json
 {
   "mode": "daily",
-  "date": "2025-11-28",
-  "orderedTokenIds": ["color-2", "color-0", "color-1", "color-4", "color-3"]
+  "date": "2026-04-28",
+  "orderedTokenIds": ["a1b2c3d4e5f6a7b8", "b2c3d4e5f6a7b8c9", ...]
+}
+```
+
+**Request (level):**
+```json
+{
+  "mode": "level",
+  "difficulty": "easy",
+  "level": 1,
+  "orderedTokenIds": ["a1b2c3d4e5f6a7b8", ...]
 }
 ```
 
@@ -171,56 +193,56 @@ Validates user's color ordering (Daily or Level mode).
 ```
 
 ### `GET /api/level?difficulty={difficulty}&level={level}`
-Returns level challenge (Easy/Medium/Hard/Insane, 1-100).
+Returns an RGB level challenge.
+- `difficulty`: easy, medium, hard, insane
+- `level`: 1-100
 
-### `GET /api/user/stats?userId={userId}&email={email}`
-Returns user statistics (streaks, win rates, fastest times).
+### `GET /api/spectrum-daily?date=YYYY-MM-DD`
+Returns today's spectrum daily challenge (sort by hue).
+Colors are clustered within a 60° hue arc for challenge.
 
-### `POST /api/user/daily-stats`
-Updates daily challenge statistics (calculates streaks automatically).
+### `GET /api/spectrum-level?difficulty={difficulty}&level={level}`
+Returns a spectrum level challenge (sort by hue).
+- `difficulty`: easy, medium, hard, insane
+- `level`: 1-100
 
-### `POST /api/user/level-stats`
-Updates level statistics (tracks progress per difficulty).
+## Data Storage
 
-### `GET /api/user/level-progress?userId={userId}&difficulty={difficulty}`
-Returns level completion progress for a difficulty.
+All user data is stored **client-side only**:
+- **localStorage**: Daily stats (RGB + Spectrum), level progress (RGB + Spectrum), theme preference, tutorial state
+- **sessionStorage**: In-progress game state (current attempt, colors, history)
+
+No user data is stored on the server. No accounts. No sign-in.
 
 ## Testing
 
 ```bash
-# Frontend tests
 cd frontend
 npm run test
-
-# API tests (when implemented)
-cd api
-npm run test
 ```
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Test locally
-4. Submit a pull request
 
 ## Troubleshooting
 
 ### Frontend won't start
 - Ensure Node.js 18+ is installed
-- Delete `node_modules` and reinstall: `npm ci`
+- Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
 - Check port 3000 isn't in use
 
 ### API won't start
-- Install Azure Functions Core Tools
+- Install Azure Functions Core Tools: `npm install -g azure-functions-core-tools@4`
+- Ensure `api/local.settings.json` exists (copy from `local.settings.example.json`)
+- Check `DAILY_CHALLENGE_SALT` is set in local settings
 - Check port 7071 isn't in use
-- Verify `local.settings.json` exists in `api/`
 
 ### CORS errors
-- Ensure API is running on port 7071
-- Check `vite.config.ts` proxy configuration
+- In development, Vite proxies `/api` to port 7071 — ensure API is running
+- In production, CORS is handled by the `ALLOWED_ORIGINS` environment variable
+
+### Build errors
+- Always build `shared` first: `cd shared && npm run build`
+- Clean dist folders if TypeScript output is stale: `rm -rf dist`
 
 ---
 
-**RGBPuzz** - Open source daily puzzle game  
-Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License
+**RGBPuzz** — Open source daily puzzle game
+Created by the RGBPuzz Team | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

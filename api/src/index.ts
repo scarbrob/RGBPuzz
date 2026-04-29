@@ -8,3 +8,5 @@
 export { getDailyChallenge } from './functions/dailyChallenge';
 export { validateSolution } from './functions/validateSolution';
 export { getLevel } from './functions/getLevel';
+export { getSpectrumLevel } from './functions/getSpectrumLevel';
+export { getSpectrumDaily } from './functions/spectrumDaily';

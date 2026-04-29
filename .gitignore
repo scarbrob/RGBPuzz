@@ -44,3 +44,6 @@ __azurite_db*__.json
 # OS
 Thumbs.db
 publish-profile.xml
+
+# Screenshots (dev only)
+screenshots/

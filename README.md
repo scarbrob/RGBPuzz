@@ -18,13 +18,16 @@
 ### Core Features
 
 - 🗓️ **Daily Challenge** - New puzzle every day at midnight UTC
+- 🌈 **Spectrum Daily** - Sort by hue instead of RGB value
 - 🎯 **Limited Attempts** - 5 tries to get it right
 - 🔒 **Hidden Values** - RGB numbers never exposed (even in network requests!)
-- 📊 **Level Mode** - 400 progressive levels across 4 difficulties
-- 📈 **Stats Tracking** - Streaks, win rates, and achievements
+- 📊 **Level Mode** - 400 progressive RGB levels across 4 difficulties
+- 🌈 **Spectrum Levels** - 400 hue-sorting levels across 4 difficulties
+- 📈 **Stats Tracking** - Streaks, win rates, and per-mode statistics
 - 🔗 **Social Sharing** - Share results like Wordle
 - 🎨 **Drag & Drop** - Intuitive touch/mouse interface
 - ⚡ **Loading Skeleton** - Smooth UX during cold starts
+- 🎆 **Confetti** - Celebration animation on puzzle solve
 
 ### Why It's Unique
 
@@ -53,19 +56,16 @@
 - Crypto API (RGB value protection)
 
 **Database**
-- Azure Table Storage (UserStats, DailyAttempts, LevelAttempts)
-- User profiles & stats
-- Level progress tracking
+- localStorage / sessionStorage (client-side only)
+- No server-side user data storage
 
 **Authentication**
-- Microsoft Entra External ID (Azure B2C)
-- Microsoft OAuth
-- Google OAuth (via Azure B2C)
-- Mock mode for development
+- No account required — all data stored locally
+- No personal information collected
 
 **Hosting**
 - Azure Static Web Apps (frontend) - **Deployed at rgbpuzz.com**
-- Azure Functions (API) - **Deployed at rgbpuzz.com/api**
+- Azure Functions (API) - **Deployed at api.rgbpuzz.com/api**
 - Flex Consumption Plan (serverless)
 - Est. Cost: $10-30/month
 
@@ -82,26 +82,32 @@ RGB values are **NEVER** sent to the client, preventing inspection or exploitati
 ## 📁 Project Structure
 
 ```
-c:\Repos\rgbpuzz\
+rgbpuzz/
 ├── frontend/              # React application
 │   ├── src/
-│   │   ├── components/   # ColorBoard, ColorTile, Header
-│   │   ├── pages/        # Home, Daily, Levels, Stats
+│   │   ├── components/   # ColorBoard, ColorTile, Header, Confetti, etc.
+│   │   ├── pages/        # Home, Daily, Levels, Spectrum, Stats
+│   │   ├── hooks/        # useGameState, useDailyStats
+│   │   ├── types/        # Shared frontend types
+│   │   ├── contexts/     # ThemeContext
+│   │   ├── config/       # API configuration
 │   │   └── App.tsx
 │   └── package.json
 │
 ├── api/                  # Azure Functions
 │   ├── src/
-│   │   ├── functions/   # API endpoints
-│   │   └── utils/       # Color generation logic
+│   │   ├── functions/   # API endpoints (daily, level, spectrum, validate)
+│   │   ├── middleware/  # CORS, rate limiting, validation
+│   │   └── utils/       # Color generation (RGB + HSL)
+│   ├── warmup/            # Timer-triggered keep-alive
 │   └── package.json
 │
 ├── shared/              # Shared TypeScript types
 │   └── src/
 │       ├── types.ts    # Interfaces
-│       └── utils.ts    # Shared utilities
+│       ├── constants.ts # Game configuration
+│       └── crypto.ts   # Client-side decryption
 │
-├── infrastructure/      # Azure deployment configs
 ├── .github/workflows/  # CI/CD pipelines
 │
 └── Documentation
@@ -111,8 +117,7 @@ c:\Repos\rgbpuzz\
     ├── ROADMAP.md             # Feature roadmap
     ├── DESIGN.md              # UI/UX mockups
     ├── PROJECT_SUMMARY.md     # Executive summary
-    └── infrastructure/
-        └── DEPLOYMENT.md      # Azure deployment
+    └── DEPLOYMENT.md          # Azure deployment
 ```
 
 ---
@@ -128,15 +133,15 @@ c:\Repos\rgbpuzz\
 ### Installation
 
 **Option 1: Automated Setup**
-```powershell
-cd c:\Repos\rgbpuzz
-.\setup.ps1
+```bash
+cd rgbpuzz
+./setup.ps1  # PowerShell
 ```
 
 **Option 2: Manual Setup**
-```powershell
+```bash
 # Install dependencies
-cd c:\Repos\rgbpuzz\shared
+cd rgbpuzz/shared
 npm install && npm run build
 
 cd ../frontend
@@ -149,15 +154,15 @@ npm install
 ### Run Development Servers
 
 **Terminal 1 - Frontend:**
-```powershell
-cd c:\Repos\rgbpuzz\frontend
+```bash
+cd rgbpuzz/frontend
 npm run dev
 ```
 → Opens at http://localhost:3000
 
 **Terminal 2 - API:**
-```powershell
-cd c:\Repos\rgbpuzz\api
+```bash
+cd rgbpuzz/api
 npm run start
 ```
 → Runs at http://localhost:7071
@@ -173,7 +178,7 @@ npm run start
 | [ROADMAP.md](ROADMAP.md) | Feature roadmap and development phases |
 | [DESIGN.md](DESIGN.md) | UI/UX mockups and design system |
 | [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) | Executive summary and strategy |
-| [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) | Azure deployment guide |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Azure deployment guide |
 
 ---
 
@@ -182,25 +187,24 @@ npm run start
 ### ✅ Production Ready - Core Game Complete!
 
 **Completed Features:**
-- ✅ Full game implementation (Daily + 400 Levels)
+- ✅ Full game implementation (Daily + Spectrum Daily + 800 Levels)
 - ✅ Frontend connected to API with real-time validation
-- ✅ Authentication (Microsoft + Google via Azure B2C)
-- ✅ Statistics tracking (streaks, fastest times, progress)
+- ✅ Statistics tracking (streaks, fastest times, progress) — stored locally
 - ✅ API deployed to Azure Functions (Flex Consumption)
 - ✅ Frontend deployed to Azure Static Web Apps
 - ✅ Loading skeleton UI for better cold start UX
 - ✅ Responsive UI with dark/light themes
-- ✅ Session persistence (authenticated + local)
+- ✅ Session persistence (local storage)
 - ✅ Privacy Policy & Terms of Service
 - ✅ Share functionality (Wordle-style results)
-- ✅ Security: esbuild 0.25.12, React Router v7-ready, MSAL race condition fixed
+- ✅ Security: esbuild 0.25.12, React Router v7-ready
 - ✅ SEO: Comprehensive meta tags, sitemap, robots.txt
 
 **Production Ready:**
-- ✅ Backend: **Deployed** at https://rgbpuzz.com/api
+- ✅ Backend: **Deployed** at https://api.rgbpuzz.com/api
 - ✅ Frontend: **Deployed** at https://rgbpuzz.com
-- ✅ Database: Azure Table Storage (UserStats, DailyAttempts, LevelAttempts)
-- ✅ Auth: Microsoft Entra External ID (Azure B2C)
+- ✅ Database: localStorage / sessionStorage (client-side)
+- ✅ No authentication required
 - ✅ CI/CD: GitHub Actions for automated deployment
 
 **Next Steps:**
@@ -216,10 +220,11 @@ npm run start
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/daily-challenge` | GET | Get today's color puzzle |
+| `/api/daily-challenge` | GET | Get today's RGB color puzzle |
 | `/api/validate-solution` | POST | Check user's answer |
-| `/api/level/{id}` | GET | Get level configuration |
-| `/api/user/stats` | GET | Get user statistics |
+| `/api/level` | GET | Get RGB level by difficulty + number |
+| `/api/spectrum-daily` | GET | Get today's spectrum (hue) puzzle |
+| `/api/spectrum-level` | GET | Get spectrum level by difficulty + number |
 
 *Full API documentation in [DEVELOPMENT.md](DEVELOPMENT.md)*
 
@@ -271,7 +276,7 @@ For bug reports or feature requests, please [open an issue](https://github.com/s
 
 ## 📄 License
 
-MIT License - Copyright (c) 2025 Benjamin Scarbrough
+MIT License
 
 See [LICENSE](LICENSE) for details
 
@@ -289,6 +294,6 @@ See [LICENSE](LICENSE) for details
 
 Questions? [Open an issue](https://github.com/scarbrob/RGBPuzz/issues) on GitHub!
 
-**Created by Benjamin Scarbrough**
+**Created by the RGBPuzz Team**
 
 **Made with 🎨 and ❤️**

@@ -1,402 +1,267 @@
 import { useState, useEffect } from 'react'
 import AnimatedNumber from '../components/AnimatedNumber'
-import { LEVELS_PER_DIFFICULTY } from '../../../shared/src/constants'
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY } from '../../../shared/src/constants'
 
-interface UserStats {
-  // Daily Challenge Stats
-  dailyStreak: number
+interface DailyStats {
+  streak: number
   longestStreak: number
-  dailyWinRate: number
-  totalDailyPlayed: number
-  totalDailyWins: number
-  averageDailyAttempts: number
-  fastestDailyTime?: number
-
-  // Level Stats
-  totalLevelsAttempted: number
-  totalLevelsSolved: number
-  levelSolveRate: number
-  averageLevelAttempts: number
-  totalLevelAttempts: number
-
-  // Per-difficulty stats
-  easySolved: number
-  easyAttempted: number
-  easyTotalAttempts: number
-  easyFastestTime?: number
-  mediumSolved: number
-  mediumAttempted: number
-  mediumTotalAttempts: number
-  mediumFastestTime?: number
-  hardSolved: number
-  hardAttempted: number
-  hardTotalAttempts: number
-  hardFastestTime?: number
-  insaneSolved: number
-  insaneAttempted: number
-  insaneTotalAttempts: number
-  insaneFastestTime?: number
+  winRate: number
+  played: number
+  wins: number
+  avgAttempts: number
+  fastestTime?: number
 }
 
-function loadLocalStats(): UserStats {
-  const stats: UserStats = {
-    dailyStreak: 0,
-    longestStreak: 0,
-    dailyWinRate: 0,
-    totalDailyPlayed: 0,
-    totalDailyWins: 0,
-    averageDailyAttempts: 0,
-    totalLevelsAttempted: 0,
-    totalLevelsSolved: 0,
-    levelSolveRate: 0,
-    averageLevelAttempts: 0,
-    totalLevelAttempts: 0,
-    easySolved: 0,
-    easyAttempted: 0,
-    easyTotalAttempts: 0,
-    mediumSolved: 0,
-    mediumAttempted: 0,
-    mediumTotalAttempts: 0,
-    hardSolved: 0,
-    hardAttempted: 0,
-    hardTotalAttempts: 0,
-    insaneSolved: 0,
-    insaneAttempted: 0,
-    insaneTotalAttempts: 0,
-  }
+interface DifficultyStats {
+  solved: number
+  attempted: number
+  totalAttempts: number
+}
 
-  // Load level progress from localStorage
-  const savedProgress = localStorage.getItem('levelProgress')
-  if (savedProgress) {
-    try {
-      const progress = JSON.parse(savedProgress)
-      const difficulties = ['easy', 'medium', 'hard', 'insane'] as const
+interface ModeStats {
+  totalSolved: number
+  totalAttempted: number
+  totalAttempts: number
+  solveRate: number
+  avgAttempts: number
+  byDifficulty: Record<string, DifficultyStats>
+}
 
-      for (const diff of difficulties) {
-        const diffProgress = progress[diff] || {}
-        let solved = 0
-        let attempted = 0
-        let totalAttempts = 0
-
-        for (let level = 1; level <= LEVELS_PER_DIFFICULTY; level++) {
-          const statsKey = `level-stats-${diff}-${level}`
-          const attemptCount = localStorage.getItem(statsKey)
-
-          if (diffProgress[level]) {
-            solved++
-            attempted++
-            totalAttempts += attemptCount ? parseInt(attemptCount) : 1
-          } else if (attemptCount) {
-            attempted++
-            totalAttempts += parseInt(attemptCount)
-          }
-        }
-
-        switch (diff) {
-          case 'easy':
-            stats.easySolved = solved; stats.easyAttempted = attempted; stats.easyTotalAttempts = totalAttempts; break
-          case 'medium':
-            stats.mediumSolved = solved; stats.mediumAttempted = attempted; stats.mediumTotalAttempts = totalAttempts; break
-          case 'hard':
-            stats.hardSolved = solved; stats.hardAttempted = attempted; stats.hardTotalAttempts = totalAttempts; break
-          case 'insane':
-            stats.insaneSolved = solved; stats.insaneAttempted = attempted; stats.insaneTotalAttempts = totalAttempts; break
-        }
-
-        stats.totalLevelsSolved += solved
-        stats.totalLevelsAttempted += attempted
-        stats.totalLevelAttempts += totalAttempts
-      }
-
-      if (stats.totalLevelsAttempted > 0) {
-        stats.levelSolveRate = (stats.totalLevelsSolved / (LEVELS_PER_DIFFICULTY * 4)) * 100
-        stats.averageLevelAttempts = stats.totalLevelAttempts / stats.totalLevelsSolved || 0
-      }
-    } catch {
-      // ignore parse errors
+function loadDailyStats(key: string): DailyStats {
+  const raw = localStorage.getItem(key)
+  if (!raw) return { streak: 0, longestStreak: 0, winRate: 0, played: 0, wins: 0, avgAttempts: 0 }
+  try {
+    const p = JSON.parse(raw)
+    const played = p.totalPlayed || 0
+    const wins = p.totalWins || 0
+    return {
+      streak: p.currentStreak || 0,
+      longestStreak: p.longestStreak || 0,
+      winRate: played > 0 ? (wins / played) * 100 : 0,
+      played,
+      wins,
+      avgAttempts: played > 0 && p.totalAttempts ? p.totalAttempts / played : 0,
+      fastestTime: p.fastestTime || undefined,
     }
-  }
+  } catch { return { streak: 0, longestStreak: 0, winRate: 0, played: 0, wins: 0, avgAttempts: 0 } }
+}
 
-  // Load daily stats from localStorage
-  const dailyStats = localStorage.getItem('rgbpuzz-daily-stats')
-  if (dailyStats) {
-    try {
-      const parsed = JSON.parse(dailyStats)
-      stats.totalDailyPlayed = parsed.totalPlayed || 0
-      stats.totalDailyWins = parsed.totalWins || 0
-      stats.dailyStreak = parsed.currentStreak || 0
-      stats.longestStreak = parsed.longestStreak || 0
-      stats.averageDailyAttempts = parsed.totalAttempts && parsed.totalPlayed
-        ? parsed.totalAttempts / parsed.totalPlayed
-        : 0
-      stats.fastestDailyTime = parsed.fastestTime || undefined
-      stats.dailyWinRate = stats.totalDailyPlayed > 0
-        ? (stats.totalDailyWins / stats.totalDailyPlayed) * 100
-        : 0
-    } catch {
-      // ignore parse errors
+function loadLevelStats(progressKey: string, statsPrefix: string, levelsPerDiff: number): ModeStats {
+  const difficulties = ['easy', 'medium', 'hard', 'insane']
+  const byDifficulty: Record<string, DifficultyStats> = {}
+  let totalSolved = 0, totalAttempted = 0, totalAttempts = 0
+
+  const saved = localStorage.getItem(progressKey)
+  const progress = saved ? JSON.parse(saved) : {}
+
+  for (const diff of difficulties) {
+    const diffProgress = progress[diff] || {}
+    let solved = 0, attempted = 0, attempts = 0
+
+    for (let level = 1; level <= levelsPerDiff; level++) {
+      const count = localStorage.getItem(`${statsPrefix}-${diff}-${level}`)
+      if (diffProgress[level]) {
+        solved++; attempted++
+        attempts += count ? parseInt(count) : 1
+      } else if (count) {
+        attempted++
+        attempts += parseInt(count)
+      }
     }
+
+    byDifficulty[diff] = { solved, attempted, totalAttempts: attempts }
+    totalSolved += solved
+    totalAttempted += attempted
+    totalAttempts += attempts
   }
 
-  return stats
+  return {
+    totalSolved, totalAttempted, totalAttempts,
+    solveRate: (totalSolved / (levelsPerDiff * 4)) * 100,
+    avgAttempts: totalSolved > 0 ? totalAttempts / totalSolved : 0,
+    byDifficulty,
+  }
+}
+
+const DIFF_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  easy: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/5', border: 'border-emerald-500/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  medium: { bg: 'bg-yellow-500/10 dark:bg-yellow-500/5', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400' },
+  hard: { bg: 'bg-orange-500/10 dark:bg-orange-500/5', border: 'border-orange-500/30', text: 'text-orange-600 dark:text-orange-400' },
+  insane: { bg: 'bg-red-500/10 dark:bg-red-500/5', border: 'border-red-500/30', text: 'text-red-600 dark:text-red-400' },
+}
+
+function DifficultyCard({ name, stats }: { name: string; stats: DifficultyStats }) {
+  const colors = DIFF_COLORS[name]
+  return (
+    <div className={`p-4 sm:p-5 rounded-2xl ${colors.bg} border-2 ${colors.border}`}>
+      <div className={`text-lg font-bold ${colors.text} mb-3 capitalize`}>{name}</div>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
+          <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+            <AnimatedNumber value={stats.solved} />/100
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
+          <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+            <AnimatedNumber value={stats.totalAttempts} />
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
+          <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+            <AnimatedNumber value={stats.solved > 0 ? stats.totalAttempts / stats.solved : 0} decimals={1} />
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DailySection({ title, gradient, accentColor, stats }: {
+  title: string; gradient: string; accentColor: string; stats: DailyStats
+}) {
+  return (
+    <div className="mb-10 sm:mb-14">
+      <h2 className={`text-xl sm:text-2xl font-bold mb-5 text-light-text-primary dark:text-dark-text-primary bg-gradient-to-r ${gradient} bg-clip-text text-transparent inline-block`}>
+        {title}
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <div className="stat-card border-2 border-orange-500/30">
+          <div className="text-3xl sm:text-4xl font-bold text-orange-500 mb-1">🔥 <AnimatedNumber value={stats.streak} /></div>
+          <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Current Streak</div>
+        </div>
+        <div className="stat-card border-2 border-yellow-500/30">
+          <div className="text-3xl sm:text-4xl font-bold text-yellow-500 mb-1">⭐ <AnimatedNumber value={stats.longestStreak} /></div>
+          <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Longest Streak</div>
+        </div>
+        <div className="stat-card border-2 border-emerald-500/30">
+          <div className="text-3xl sm:text-4xl font-bold text-emerald-500 mb-1"><AnimatedNumber value={stats.winRate} decimals={1} suffix="%" /></div>
+          <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Win Rate</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {[
+          { label: 'Played', value: stats.played },
+          { label: 'Won', value: stats.wins },
+          { label: 'Avg Attempts', value: stats.avgAttempts, decimals: 1 },
+          { label: 'Fastest', value: stats.fastestTime, isTime: true },
+        ].map((item, i) => (
+          <div key={i} className="stat-card">
+            <div className={`text-2xl sm:text-3xl font-bold ${accentColor} mb-1`}>
+              {item.isTime ? (item.value ? <><AnimatedNumber value={item.value as number} isTime /></> : '-') :
+                <AnimatedNumber value={item.value as number} decimals={item.decimals} />}
+            </div>
+            <div className="text-xs sm:text-sm text-light-text-secondary dark:text-dark-text-secondary">{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LevelSection({ title, gradient, accentColor, stats }: {
+  title: string; gradient: string; accentColor: string; stats: ModeStats
+}) {
+  return (
+    <div className="mb-10 sm:mb-14">
+      <h2 className={`text-xl sm:text-2xl font-bold mb-5 text-light-text-primary dark:text-dark-text-primary bg-gradient-to-r ${gradient} bg-clip-text text-transparent inline-block`}>
+        {title}
+      </h2>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-5">
+        {[
+          { label: 'Solved', value: stats.totalSolved },
+          { label: 'Attempted', value: stats.totalAttempted },
+          { label: 'Complete', value: stats.solveRate, decimals: 1, suffix: '%' },
+          { label: 'Avg Attempts', value: stats.avgAttempts, decimals: 1 },
+          { label: 'Total Attempts', value: stats.totalAttempts },
+        ].map((item, i) => (
+          <div key={i} className={`stat-card ${i === 2 ? 'col-span-2 sm:col-span-1' : ''}`}>
+            <div className={`text-2xl sm:text-3xl font-bold ${accentColor} mb-1`}>
+              <AnimatedNumber value={item.value} decimals={item.decimals} suffix={item.suffix} />
+            </div>
+            <div className="text-xs sm:text-sm text-light-text-secondary dark:text-dark-text-secondary">{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {['easy', 'medium', 'hard', 'insane'].map(diff => (
+          <DifficultyCard key={diff} name={diff} stats={stats.byDifficulty[diff]} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function StatsPage() {
-  const [stats, setStats] = useState<UserStats | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [rgbDaily, setRgbDaily] = useState<DailyStats | null>(null)
+  const [spectrumDaily, setSpectrumDaily] = useState<DailyStats | null>(null)
+  const [rgbLevels, setRgbLevels] = useState<ModeStats | null>(null)
+  const [spectrumLevels, setSpectrumLevels] = useState<ModeStats | null>(null)
 
   useEffect(() => {
-    setStats(loadLocalStats())
+    setRgbDaily(loadDailyStats('rgbpuzz-daily-stats'))
+    setSpectrumDaily(loadDailyStats('rgbpuzz-spectrum-daily-stats'))
+    setRgbLevels(loadLevelStats('levelProgress', 'level-stats', LEVELS_PER_DIFFICULTY))
+    setSpectrumLevels(loadLevelStats('spectrumLevelProgress', 'spectrum-stats', SPECTRUM_LEVELS_PER_DIFFICULTY))
+    setLoaded(true)
   }, [])
 
-  if (!stats) {
+  if (!loaded) {
     return (
       <div className="max-w-4xl mx-auto text-center py-20">
-        <div className="text-2xl text-light-text-secondary dark:text-dark-text-secondary">
-          Loading your statistics...
-        </div>
+        <div className="text-xl text-light-text-secondary dark:text-dark-text-secondary">Loading statistics...</div>
       </div>
     )
   }
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in px-4">
-      <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-light-accent via-purple-600 to-pink-600 dark:from-dark-accent dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent pb-2 mb-6 sm:mb-8 text-center">
+      <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 dark:from-violet-400 dark:via-fuchsia-400 dark:to-pink-400 bg-clip-text text-transparent pb-2 mb-8 sm:mb-10 text-center">
         Your Statistics
       </h1>
 
-      {/* Daily Challenge Stats */}
-      <div className="mb-8 sm:mb-12">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-light-text-primary dark:text-dark-text-primary">
-          📅 Daily Challenge
-        </h2>
+      {rgbDaily && (
+        <DailySection
+          title="📅 RGB Daily Challenge"
+          gradient="from-violet-600 to-fuchsia-500 dark:from-violet-400 dark:to-fuchsia-400"
+          accentColor="text-light-accent dark:text-dark-accent"
+          stats={rgbDaily}
+        />
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-orange-500/30">
-            <div className="text-3xl sm:text-4xl font-bold text-orange-500 mb-1 sm:mb-2">
-              🔥 <AnimatedNumber value={stats.dailyStreak} />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Current Streak</div>
-          </div>
+      {spectrumDaily && (
+        <DailySection
+          title="🌈 Spectrum Daily Challenge"
+          gradient="from-rose-500 via-amber-500 to-cyan-500 dark:from-rose-400 dark:via-amber-400 dark:to-cyan-400"
+          accentColor="text-amber-500 dark:text-amber-400"
+          stats={spectrumDaily}
+        />
+      )}
 
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-yellow-500/30">
-            <div className="text-3xl sm:text-4xl font-bold text-yellow-500 mb-1 sm:mb-2">
-              ⭐ <AnimatedNumber value={stats.longestStreak} />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Longest Streak</div>
-          </div>
+      {rgbLevels && (
+        <LevelSection
+          title="⚡ RGB Levels"
+          gradient="from-fuchsia-500 to-pink-500 dark:from-fuchsia-400 dark:to-pink-400"
+          accentColor="text-light-accent dark:text-dark-accent"
+          stats={rgbLevels}
+        />
+      )}
 
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 border-2 border-green-500/30">
-            <div className="text-3xl sm:text-4xl font-bold text-green-500 mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.dailyWinRate} decimals={1} suffix="%" />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Win Rate</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.totalDailyPlayed} />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Games Played</div>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.totalDailyWins} />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Games Won</div>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.averageDailyAttempts} decimals={1} />
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Avg Attempts</div>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              {stats.fastestDailyTime ? (
-                <>⚡ <AnimatedNumber value={stats.fastestDailyTime} isTime={true} /></>
-              ) : '-'}
-            </div>
-            <div className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary">Fastest Time</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Level Stats */}
-      <div className="mb-8 sm:mb-12">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-light-text-primary dark:text-dark-text-primary">
-          🎮 Level Mode
-        </h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.totalLevelsSolved} />
-            </div>
-            <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Levels Solved</div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.totalLevelsAttempted} />
-            </div>
-            <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Levels Attempted</div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20 col-span-2 sm:col-span-1">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.levelSolveRate} decimals={1} suffix="%" />
-            </div>
-            <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Percent Complete</div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.averageLevelAttempts} decimals={1} />
-            </div>
-            <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Avg Attempts</div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-light-surface/30 dark:bg-dark-surface/20">
-            <div className="text-2xl sm:text-3xl font-bold text-light-accent dark:text-dark-accent mb-1 sm:mb-2">
-              <AnimatedNumber value={stats.totalLevelAttempts} />
-            </div>
-            <div className="text-xs sm:text-sm md:text-base text-light-text-secondary dark:text-dark-text-secondary">Total Attempts</div>
-          </div>
-        </div>
-
-        {/* Per-Difficulty Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="p-4 sm:p-6 rounded-2xl bg-green-500/10 dark:bg-green-500/5 border-2 border-green-500/30">
-            <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400 mb-2 sm:mb-3">Easy</div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.easySolved} />/100 (<AnimatedNumber value={stats.easySolved} />%)
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.easyTotalAttempts} />
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.easySolved > 0 ? stats.easyTotalAttempts / stats.easySolved : 0} decimals={1} />
-                </span>
-              </div>
-              {stats.easyFastestTime && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
-                  <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ <AnimatedNumber value={stats.easyFastestTime} isTime={true} />
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/5 border-2 border-yellow-500/30">
-            <div className="text-lg sm:text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-2 sm:mb-3">Medium</div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.mediumSolved} />/100 (<AnimatedNumber value={stats.mediumSolved} />%)
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.mediumTotalAttempts} />
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.mediumSolved > 0 ? stats.mediumTotalAttempts / stats.mediumSolved : 0} decimals={1} />
-                </span>
-              </div>
-              {stats.mediumFastestTime && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
-                  <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ <AnimatedNumber value={stats.mediumFastestTime} isTime={true} />
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-orange-500/10 dark:bg-orange-500/5 border-2 border-orange-500/30">
-            <div className="text-lg sm:text-xl font-bold text-orange-600 dark:text-orange-400 mb-2 sm:mb-3">Hard</div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.hardSolved} />/100 (<AnimatedNumber value={stats.hardSolved} />%)
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.hardTotalAttempts} />
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.hardSolved > 0 ? stats.hardTotalAttempts / stats.hardSolved : 0} decimals={1} />
-                </span>
-              </div>
-              {stats.hardFastestTime && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
-                  <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ <AnimatedNumber value={stats.hardFastestTime} isTime={true} />
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6 rounded-2xl bg-red-500/10 dark:bg-red-500/5 border-2 border-red-500/30">
-            <div className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400 mb-2 sm:mb-3">Insane</div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Complete:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.insaneSolved} />/100 (<AnimatedNumber value={stats.insaneSolved} />%)
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Attempts:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.insaneTotalAttempts} />
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">Avg:</span>
-                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  <AnimatedNumber value={stats.insaneSolved > 0 ? stats.insaneTotalAttempts / stats.insaneSolved : 0} decimals={1} />
-                </span>
-              </div>
-              {stats.insaneFastestTime && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Fastest:</span>
-                  <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                    ⚡ <AnimatedNumber value={stats.insaneFastestTime} isTime={true} />
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {spectrumLevels && (
+        <LevelSection
+          title="🌈 Spectrum Levels"
+          gradient="from-rose-500 via-amber-500 to-cyan-500 dark:from-rose-400 dark:via-amber-400 dark:to-cyan-400"
+          accentColor="text-amber-500 dark:text-amber-400"
+          stats={spectrumLevels}
+        />
+      )}
     </div>
   )
 }

@@ -25,7 +25,7 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: 'none', // No transitions for instant movement
+    transition: isDragging ? 'none' : 'transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease',
     backgroundColor: color,
     width: size ? `${size}px` : undefined,
     height: size ? `${size}px` : undefined,
@@ -35,23 +35,28 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
     <button
       ref={setNodeRef}
       style={style}
-      aria-label={`Color tile ${index !== undefined ? index + 1 : ''}, ${color}`}
+      aria-label={`Color tile ${index !== undefined ? index + 1 : ''}`}
       {...attributes}
       {...listeners}
       className={`color-tile relative group ${
-        isCorrect ? 'ring-2 sm:ring-4 ring-green-400 ring-offset-1 ring-offset-gray-900' : 
-        isIncorrect ? 'ring-2 sm:ring-4 ring-red-400 ring-offset-1 ring-offset-gray-900' : ''
-      } ${isDragging ? 'opacity-50 scale-110 z-50' : 'opacity-100'} ${
+        isCorrect ? 'ring-2 sm:ring-3 ring-emerald-400 ring-offset-2 ring-offset-light-bg dark:ring-offset-dark-bg' : 
+        isIncorrect ? 'ring-2 sm:ring-3 ring-red-400 ring-offset-2 ring-offset-light-bg dark:ring-offset-dark-bg' : ''
+      } ${isDragging ? 'opacity-90 scale-110 z-50 rotate-3 !shadow-2xl' : 'opacity-100'} ${
         !locked ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
       }`}
     >
+      {/* Glossy highlight effect */}
+      <div className="absolute inset-0 rounded-xl sm:rounded-2xl overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent" />
+      </div>
+      
       {isCorrect && (
-        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-green-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none animate-bounce-once">
+        <div className="absolute -top-2 -right-2 bg-emerald-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg pointer-events-none animate-bounce-once ring-2 ring-light-bg dark:ring-dark-bg">
           ✓
         </div>
       )}
       {isIncorrect && (
-        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg pointer-events-none animate-bounce-once">
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg pointer-events-none animate-bounce-once ring-2 ring-light-bg dark:ring-dark-bg">
           ✗
         </div>
       )}

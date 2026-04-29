@@ -123,8 +123,8 @@ export default function LevelsPage() {
               onClick={() => setSelectedDifficulty(difficulty)}
               className={`p-4 sm:p-6 rounded-2xl transition-all duration-300 ${
                 isSelected
-                  ? 'bg-light-accent dark:bg-dark-accent text-white scale-105 shadow-lg'
-                  : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-105'
+                  ? 'bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-400 dark:to-purple-500 text-white scale-105 shadow-glow-md'
+                  : 'stat-card hover:scale-105 hover:shadow-glow-sm'
               }`}
             >
               <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{config.emoji}</div>
@@ -155,6 +155,7 @@ export default function LevelsPage() {
       ) : (
         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
           {levels.map((level) => {
+            const isNextToPlay = !level.locked && !level.completed && (level.level === 1 || progress[level.level - 1])
             return (
               <button
                 key={level.level}
@@ -162,10 +163,10 @@ export default function LevelsPage() {
                 disabled={level.locked}
                 className={`aspect-square p-1 sm:p-2 rounded-lg sm:rounded-xl transition-all flex flex-col items-center justify-center relative ${
                   level.locked
-                    ? 'bg-light-surface/10 dark:bg-dark-surface/10 opacity-40 cursor-not-allowed'
+                    ? 'bg-light-border/30 dark:bg-dark-border/30 opacity-40 cursor-not-allowed'
                     : level.completed
                     ? 'bg-light-accent/20 dark:bg-dark-accent/20 hover:bg-light-accent/30 dark:hover:bg-dark-accent/30 hover:scale-110 hover:shadow-lg'
-                    : 'bg-light-surface/30 dark:bg-dark-surface/20 hover:bg-light-surface/50 dark:hover:bg-dark-surface/30 hover:scale-110 hover:-rotate-3 hover:border-2 hover:border-light-accent dark:hover:border-dark-accent'
+                    : `stat-card hover:scale-110 hover:-rotate-2 hover:shadow-glow-sm hover:border-light-accent/40 dark:hover:border-dark-accent/40 ${isNextToPlay ? 'animate-glow ring-1 ring-light-accent/30 dark:ring-dark-accent/30' : ''}`
                 }`}
               >
               {level.locked && (

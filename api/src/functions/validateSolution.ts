@@ -1,13 +1,13 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { generateDailySeed, generateColorsFromSeed, generateLevelColors, createColorToken, rgbToValue } from '../utils/colorGenerator';
+import { generateDailySeed, generateColorsFromSeed, generateLevelColors, generateSpectrumLevelColors, generateSpectrumDailyColors, createColorToken, rgbToValue, hueToValue } from '../utils/colorGenerator';
 import { validateTokenIds, validateDifficulty, validateLevel, validateDate } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
-import { DAILY_CHALLENGE_CONFIG } from '../../../shared/src/constants';
+import { DAILY_CHALLENGE_CONFIG, SPECTRUM_DAILY_CONFIG } from '../../../shared/src/constants';
 
 interface ValidationRequest {
   date?: string;
-  mode?: 'daily' | 'level';
+  mode?: 'daily' | 'level' | 'spectrum' | 'spectrum-daily';
   difficulty?: 'easy' | 'medium' | 'hard' | 'insane';
   level?: number;
   orderedTokenIds: string[];
@@ -62,19 +62,18 @@ export async function validateSolution(
     }
     
     const salt = process.env.DAILY_CHALLENGE_SALT;
-      if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
+    if (!salt) throw new Error('DAILY_CHALLENGE_SALT environment variable is required');
     let colors;
     
     // Generate colors based on mode
-    if (mode === 'level') {
+    if (mode === 'level' || mode === 'spectrum') {
       if (!difficulty || !level) {
         return addCorsHeaders({
           status: 400,
-          jsonBody: { error: 'Difficulty and level required for level mode' },
+          jsonBody: { error: 'Difficulty and level required for level/spectrum mode' },
         });
       }
       
-      // Validate difficulty and level
       const difficultyError = validateDifficulty(difficulty);
       if (difficultyError) {
         return addCorsHeaders({
@@ -91,14 +90,18 @@ export async function validateSolution(
         });
       }
       
-      context.log(`Validating level: ${difficulty} ${level}`);
-      colors = generateLevelColors(difficulty, level);
+      if (mode === 'spectrum') {
+        context.log(`Validating spectrum level: ${difficulty} ${level}`);
+        colors = generateSpectrumLevelColors(difficulty, level);
+      } else {
+        context.log(`Validating level: ${difficulty} ${level}`);
+        colors = generateLevelColors(difficulty, level);
+      }
     } else {
-      // Daily challenge mode
+      // Daily challenge mode (RGB or spectrum)
       const queryDate = request.query?.get('date');
       const date = body.date || queryDate || new Date().toISOString().split('T')[0];
       
-      // Validate date if provided
       if (body.date || queryDate) {
         const dateError = validateDate(date);
         if (dateError) {
@@ -109,17 +112,22 @@ export async function validateSolution(
         }
       }
       
-      context.log('Validating solution for date:', date);
-      
-      const colorCount = DAILY_CHALLENGE_CONFIG.colorCount;
-      const seed = generateDailySeed(date, salt);
-      colors = generateColorsFromSeed(seed, colorCount);
+      if (mode === 'spectrum-daily') {
+        context.log('Validating spectrum daily for date:', date);
+        const seed = generateDailySeed(date, salt + ':spectrum');
+        colors = generateSpectrumDailyColors(seed, SPECTRUM_DAILY_CONFIG.colorCount, SPECTRUM_DAILY_CONFIG.hueArc);
+      } else {
+        context.log('Validating solution for date:', date);
+        const colorCount = DAILY_CHALLENGE_CONFIG.colorCount;
+        const seed = generateDailySeed(date, salt);
+        colors = generateColorsFromSeed(seed, colorCount);
+      }
     }
     
     // Create mapping of hash IDs to colors
     const hashToIndex = new Map();
     colors.forEach((color, index) => {
-      const saltSuffix = mode === 'level' ? `${difficulty}${level}` : '';
+      const saltSuffix = mode === 'spectrum' ? `spectrum${difficulty}${level}` : mode === 'spectrum-daily' ? 'spectrumdaily' : mode === 'level' ? `${difficulty}${level}` : '';
       const hash = createColorToken(color, index, salt + saltSuffix);
       hashToIndex.set(hash, index);
     });
@@ -135,9 +143,10 @@ export async function validateSolution(
       });
     }
     
-    // Get the correct order (indices sorted by RGB value)
+    // Get the correct order — use hue sorting for spectrum, RGB for everything else
+    const sortFn = (mode === 'spectrum' || mode === 'spectrum-daily') ? hueToValue : rgbToValue;
     const correctOrder = colors
-      .map((color, index) => ({ index, value: rgbToValue(color) }))
+      .map((color, index) => ({ index, value: sortFn(color) }))
       .sort((a, b) => a.value - b.value)
       .map(item => item.index);
     

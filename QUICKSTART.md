@@ -2,88 +2,83 @@
 
 ## Development
 
-### Start Everything (Recommended)
-```powershell
+### Start Everything (Two terminals)
+```bash
 # Terminal 1 - Frontend
-cd c:\Repos\rgbpuzz\frontend
+cd frontend
 npm run dev
 
 # Terminal 2 - API
-cd c:\Repos\rgbpuzz\api
+cd api
 npm run start
-```
-
-### Or use the setup script
-```powershell
-cd c:\Repos\rgbpuzz
-.\setup.ps1
 ```
 
 ## First Time Setup
 
-```powershell
-cd c:\Repos\rgbpuzz
+```bash
+# Clone and install
+git clone https://github.com/scarbrob/RGBPuzz.git
+cd RGBPuzz
 
 # Install all dependencies
 cd shared && npm install && npm run build
 cd ../frontend && npm install
 cd ../api && npm install
+
+# Configure API
+cd ../api
+cp local.settings.example.json local.settings.json
+# Edit local.settings.json if needed
 ```
 
 ## Useful Commands
 
-```powershell
+```bash
 # Build everything for production
-cd c:\Repos\rgbpuzz
 cd shared && npm run build
-cd ../frontend && npm run build
 cd ../api && npm run build
+cd ../frontend && npm run build
 
 # Run linting
 cd frontend && npm run lint
 
 # Preview production build
 cd frontend && npm run preview
+
+# Run tests
+cd frontend && npm run test
 ```
 
 ## Troubleshooting
 
 ### "Cannot find module" errors
-```powershell
-# Clean install
-cd shared && Remove-Item -Recurse -Force node_modules && npm install
-cd ../frontend && Remove-Item -Recurse -Force node_modules && npm install
-cd ../api && Remove-Item -Recurse -Force node_modules && npm install
+```bash
+# Clean install all packages
+cd shared && rm -rf node_modules && npm install && npm run build
+cd ../frontend && rm -rf node_modules && npm install
+cd ../api && rm -rf node_modules && npm install
 ```
 
 ### Port already in use
-```powershell
-# Check what's using port 3000
-netstat -ano | findstr :3000
-
-# Kill the process (replace PID with actual number)
-taskkill /PID <PID> /F
+```bash
+# Find what's using a port
+lsof -i :3000   # macOS/Linux
+netstat -tlnp | grep 3000  # Linux
 ```
 
 ### Azure Functions not starting
-```powershell
-# Install Azure Functions Core Tools
-npm install -g azure-functions-core-tools@4 --unsafe-perm true
+```bash
+npm install -g azure-functions-core-tools@4
 ```
 
 ## URLs
 
-**Development:**
-- Frontend: http://localhost:3000
-- API: http://localhost:7071
-- API Health: http://localhost:7071/api/daily-challenge
-
-**Production:**
-- Website: **rgbpuzz.com** (ready to deploy)
-- API: https://rgbpuzz.com/api (deployed ✅)
-- API Health: https://rgbpuzz.com/api/daily-challenge
+| Environment | Frontend | API |
+|-------------|----------|-----|
+| **Development** | http://localhost:3000 | http://localhost:7071 |
+| **Production** | https://rgbpuzz.com | https://api.rgbpuzz.com/api |
 
 ---
 
-**RGBPuzz** - Open source daily puzzle game  
-Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License
+**RGBPuzz** — Open source daily puzzle game
+Created by the RGBPuzz Team | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

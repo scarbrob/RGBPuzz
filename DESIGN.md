@@ -1,5 +1,7 @@
 # Game Design & UI Mockup
 
+> **Note:** Some mockups below show features from the original design vision (e.g., Sign In button, accounts). The shipped product uses local storage only with no authentication required.
+
 ## Visual Design Philosophy
 
 ### Color Scheme
@@ -311,4 +313,4 @@ Play at rgbpuzz.com
 ---
 
 **RGBPuzz** - Open source daily puzzle game  
-Created by Benjamin Scarbrough | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License
+Created by the RGBPuzz Team | [GitHub](https://github.com/scarbrob/RGBPuzz) | MIT License

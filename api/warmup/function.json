@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "name": "warmupTimer",
+      "name": "timer",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 */4 * * * *"

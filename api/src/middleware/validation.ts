@@ -83,5 +83,11 @@ export function validateTokenIds(tokenIds: any): ValidationError | null {
     }
   }
 
+  // Check for duplicate tokens
+  const uniqueTokens = new Set(tokenIds);
+  if (uniqueTokens.size !== tokenIds.length) {
+    return { field: 'orderedTokenIds', message: 'duplicate tokens not allowed' };
+  }
+
   return null;
 }

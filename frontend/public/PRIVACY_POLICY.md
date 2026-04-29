@@ -1,123 +1,87 @@
 # Privacy Policy for RGBPuzz
 
-**Last Updated: November 26, 2025**
+**Last Updated: April 28, 2026**
 
 ## Introduction
 
-RGBPuzz ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our color puzzle game at www.rgbpuzz.com.
+RGBPuzz ("we", "our", or "us") operates rgbpuzz.com. This Privacy Policy explains how we handle your data when you use our color puzzle game at rgbpuzz.com.
 
 ## Information We Collect
 
-### Personal Information
-When you sign in to RGBPuzz, we collect:
-- **User ID** - A unique identifier from your authentication provider (Microsoft or Google)
-- **Display name** (client-side only) - Your name from your authentication provider, used only to display in the app interface and never stored on our servers
+### Local Data
 
-### Game Data
-We automatically collect and store:
-- **Game statistics** - Puzzle attempts, completions, solve times, win/loss records
-- **Progress data** - Level completion status, daily challenge history
-- **Gameplay patterns** - Which puzzles you've attempted and completed
+RGBPuzz does **not** require any account or sign-in. All game data is stored locally in your browser using localStorage and sessionStorage. This includes:
+
+- Game progress (levels completed, attempts)
+- Daily challenge progress and streaks
+- Game statistics and performance metrics
+- Theme preferences (dark/light mode)
+
+**This data never leaves your browser.** We do not collect, transmit, or store any personal information on our servers.
+
+### Server Communication
+
+The game communicates with our API server only to:
+- Fetch daily challenge puzzles
+- Fetch level puzzles
+- Validate puzzle solutions
+
+No personally identifiable information is sent with these requests. We do not log IP addresses or use tracking cookies.
 
 ### Technical Information
-We may collect:
-- **Browser information** - Browser type, version
-- **Device information** - Operating system, screen resolution
-- **Log data** - Access times, IP addresses (stored temporarily for security)
+
+Our hosting provider (Microsoft Azure) may collect standard server logs including:
+- IP addresses (temporary, for security/DDoS protection)
+- Browser type and version
+- Request timestamps
+
+These logs are managed by Azure and are not used for tracking or analytics.
 
 ## How We Use Your Information
 
-We use your information to:
-1. **Authenticate your account** - Verify your identity through Microsoft or Google
-2. **Save your progress** - Store your game statistics and level completion using only your unique user ID
-3. **Provide game features** - Enable daily challenges, level progression, and statistics
-4. **Improve our service** - Analyze anonymous usage patterns to enhance the game
-5. **Prevent abuse** - Rate limiting and security measures
+- To generate and validate puzzle challenges
+- To display your locally-stored statistics
+- To remember your theme preference
 
-**Note**: We do not store your email address or any other personally identifiable information beyond the authentication provider's user ID.
+## Data Storage
 
-## Third-Party Services
+All game data is stored locally in your browser. Clearing your browser data will remove your game progress. We do not store any user data on our servers.
 
-### Authentication Providers
-We use Microsoft Entra External ID for authentication, which may integrate with:
-- **Microsoft Account** - Microsoft's authentication service
-- **Google Account** - Google's authentication service
+## Data Sharing
 
-When you sign in, you're subject to the privacy policies of these providers.
+We do **not** sell, trade, or share any data with third parties.
 
-### Cloud Services
-Your data is stored on:
-- **Microsoft Azure** - Cloud storage and computing services
-  - Azure Table Storage for game data
-  - Azure Functions for game logic
-  - Azure Static Web Apps for the website
+Third-party services involved:
+- **Microsoft Azure** — Hosts the application (Static Web Apps + Functions)
 
-## Data Storage and Security
-
-- **Location**: Your data is stored in Microsoft Azure data centers (East US 2 region)
-- **Encryption**: Data is encrypted in transit (HTTPS) and at rest
-- **Access Control**: Only you can access your game data when authenticated
-- **Retention**: We retain your data as long as your account is active
+No analytics services, no advertising networks, no social media trackers.
 
 ## Your Rights
 
-You have the right to:
-- **Access your data** - View your stored game statistics
-- **Delete your data** - Request deletion of your account and all associated data
-- **Withdraw consent** - Stop using the service and request data deletion
+Since all data is stored locally in your browser, you have full control:
+- **View** your data via the Stats page
+- **Delete** your data by clearing your browser's localStorage
+- **Export** is not applicable (data is already on your device)
 
-**Privacy by Design**: We only store your authentication provider's user ID. Your display name is only used locally in your browser for UI display and is never transmitted to or stored on our servers.
+## Cookies
 
-To exercise these rights, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
-
-## Cookies and Local Storage
-
-RGBPuzz uses:
-- **Local Storage** - To store authentication tokens and game session data
-- **Session Storage** - To maintain your game state during your session
-
-No tracking cookies or third-party advertising cookies are used.
+RGBPuzz does **not** use cookies. We use localStorage and sessionStorage for game state only.
 
 ## Children's Privacy
 
-RGBPuzz is not intended for children under 13. We do not knowingly collect information from children under 13. If you believe a child has provided us with personal information, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
+RGBPuzz does not collect any personal data from anyone, including children under 13.
 
 ## International Users
 
-If you're accessing RGBPuzz from outside the United States, your information will be transferred to and stored in the United States. By using our service, you consent to this transfer.
+No personal data is transferred internationally because we don't collect personal data. Game puzzles are served from Azure data centers, but no user information is stored.
 
 ## Changes to This Policy
 
-We may update this Privacy Policy from time to time. We will notify you of significant changes by updating the "Last Updated" date at the top of this policy.
+We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "Last Updated" date.
 
-## GDPR Compliance (EU Users)
+## Contact
 
-If you're in the European Union, you have additional rights under GDPR:
-- **Right to be forgotten** - Request complete deletion of your data
-- **Data portability** - Request a copy of your data in a machine-readable format
-- **Object to processing** - Object to how we process your data
+For questions about this Privacy Policy:
 
-## CCPA Compliance (California Users)
-
-California residents have the right to:
-- Know what personal information is collected
-- Know whether personal information is sold or disclosed
-- Say no to the sale of personal information (we don't sell your data)
-- Access your personal information
-- Request deletion of personal information
-
-## Contact Us
-
-If you have questions about this Privacy Policy or our data practices, please file an issue at https://github.com/scarbrob/RGBPuzz/issues
-
-## Data We Don't Collect
-
-We do NOT:
-- Collect or store your email address
-- Collect or store your real name (display name is only used client-side)
-- Sell your personal information to third parties
-- Use your data for advertising purposes
-- Track you across other websites
-- Collect payment information (the game is free)
-- Collect location data beyond what your browser provides
-- Store any personally identifiable information beyond the authentication provider's user ID
+RGBPuzz
+legal@rgbpuzz.com

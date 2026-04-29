@@ -138,19 +138,13 @@ export default function LevelsPage() {
 
       {/* Level Grid */}
       {loading ? (
-        <div>
-          {/* Mobile: 5 columns = 20 rows */}
-          <div className="sm:hidden space-y-2">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="h-12 bg-gradient-to-r from-light-border via-light-accent/20 to-light-border dark:from-dark-border dark:via-dark-accent/20 dark:to-dark-border rounded-xl animate-pulse"></div>
-            ))}
-          </div>
-          {/* Desktop: 10 columns = 10 rows */}
-          <div className="hidden sm:block space-y-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="h-16 bg-gradient-to-r from-light-border via-light-accent/20 to-light-border dark:from-dark-border dark:via-dark-accent/20 dark:to-dark-border rounded-xl animate-pulse"></div>
-            ))}
-          </div>
+        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-lg sm:rounded-xl animate-pulse" style={{
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(167, 139, 250, 0.1))',
+              animationDelay: `${(i % 10) * 0.05}s`,
+            }} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">

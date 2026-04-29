@@ -144,9 +144,12 @@ export default function SpectrumLevelsPage() {
 
       {/* Level Grid */}
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-12 bg-gradient-to-r from-light-border via-light-accent/10 to-light-border dark:from-dark-border dark:via-dark-accent/10 dark:to-dark-border rounded-xl animate-pulse" />
+        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-lg sm:rounded-xl animate-pulse" style={{
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.06), rgba(6, 182, 212, 0.1))',
+              animationDelay: `${(i % 10) * 0.05}s`,
+            }} />
           ))}
         </div>
       ) : (

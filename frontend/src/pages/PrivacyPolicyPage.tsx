@@ -3,11 +3,11 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="max-w-4xl mx-auto animate-fade-in px-4">
+      <div className="py-4 sm:py-8">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-light-accent dark:text-dark-accent hover:opacity-80 transition-opacity mb-6"
+          className="game-button-secondary text-sm mb-6 inline-flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Game
@@ -17,13 +17,13 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
 
-        <div className="prose prose-sm sm:prose dark:prose-invert max-w-none space-y-6 text-light-text-primary dark:text-dark-text-primary">
+        <div className="glass-card p-6 sm:p-8 md:p-10 space-y-6 text-light-text-primary dark:text-dark-text-primary">
           <p className="text-light-text-secondary dark:text-dark-text-secondary">
             <strong>Last Updated:</strong> April 28, 2026
           </p>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               1. Introduction
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               2. Information We Collect
             </h2>
             <h3 className="text-xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               3. How We Use Your Information
             </h2>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               4. Data Storage
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -88,7 +88,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               5. Data Sharing
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               6. Your Rights
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3">
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               7. Children's Privacy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               8. Changes to This Policy
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-3">
+            <h2 className="text-xl font-bold text-light-accent dark:text-dark-accent mb-3">
               9. Contact
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">

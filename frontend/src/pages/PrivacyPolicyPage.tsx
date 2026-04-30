@@ -194,11 +194,11 @@ export default function PrivacyPolicyPage() {
               9. Security
             </h2>
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              The Service is served over HTTPS. Game-state data in your browser
-              is not encrypted at rest beyond your operating system's standard
-              browser-storage protections. Because we store no personal data on
-              our servers, the impact of a server breach would be limited to the
-              transient request logs described in Section 4.
+              The Service is served over HTTPS. Because we store no personal
+              data on our servers and require no accounts, the impact of a
+              server breach would be limited to the transient request logs
+              described in Section 4. We make no other security guarantees —
+              see the Disclaimer of Warranties in our Terms of Service.
             </p>
           </section>
 

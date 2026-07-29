@@ -48,6 +48,9 @@ jobs:
           npm ci --prefix api
           npm run build --prefix api
 
+      - name: Unit tests (gate deploy on green)
+        run: npm test --prefix api
+
       - name: Prune to production dependencies
         run: npm prune --omit=dev --prefix api
 

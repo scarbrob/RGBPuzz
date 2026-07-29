@@ -56,6 +56,29 @@ jobs:
           npm run build --prefix shared
           npm run build --prefix frontend
 
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-swa
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: E2E tests (gate deploy on green)
+        run: npm run test:e2e -- --project=chromium
+        working-directory: frontend
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-deploy
+          path: frontend/playwright-report
+          retention-days: 7
+
       - name: Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:

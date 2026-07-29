@@ -36,6 +36,7 @@ export default function ColorTile({ id, color, index, isCorrect = false, isIncor
       ref={setNodeRef}
       style={style}
       aria-label={`Color tile ${index !== undefined ? index + 1 : ''}`}
+      data-e2e-id={id}
       {...attributes}
       {...listeners}
       className={`color-tile relative group ${

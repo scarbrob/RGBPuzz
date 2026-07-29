@@ -56,9 +56,15 @@ export function validateDate(date: string): ValidationError | null {
     return { field: 'date', message: 'date must be in YYYY-MM-DD format' };
   }
 
-  // Validate it's a real date
-  const parsed = new Date(date);
+  // Validate it's a real date.
+  // Note: `new Date('2026-02-30')` does NOT throw — JS rolls it over to Mar 2.
+  // Round-trip through toISOString to reject rolled-over calendar dates.
+  const parsed = new Date(`${date}T00:00:00Z`);
   if (isNaN(parsed.getTime())) {
+    return { field: 'date', message: 'invalid date' };
+  }
+
+  if (parsed.toISOString().slice(0, 10) !== date) {
     return { field: 'date', message: 'invalid date' };
   }
 

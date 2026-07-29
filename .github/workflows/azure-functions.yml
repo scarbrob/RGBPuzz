@@ -2,49 +2,57 @@ name: Deploy Azure Functions
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'api/**'
       - 'shared/**'
       - '.github/workflows/azure-functions.yml'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
 env:
   AZURE_FUNCTIONAPP_NAME: rgbpuzz-api
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'api'
   NODE_VERSION: '22.x'
 
 jobs:
   build-and-deploy:
+    name: Build & Deploy API
     runs-on: ubuntu-latest
+    environment: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            shared/package-lock.json
+            api/package-lock.json
 
-      - name: Install shared dependencies
+      - name: Install & build shared
         run: |
-          cd shared
-          npm install
-          npm run build
+          npm ci --prefix shared
+          npm run build --prefix shared
 
-      - name: Install API dependencies
+      - name: Install & build API
         run: |
-          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          npm install
+          npm ci --prefix api
+          npm run build --prefix api
 
-      - name: Build
-        run: |
-          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          npm run build
+      - name: Prune to production dependencies
+        run: npm prune --omit=dev --prefix api
 
       - name: Login to Azure
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
@@ -52,4 +60,19 @@ jobs:
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: api
+
+      - name: Smoke test
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/daily-challenge" || true)
+            echo "attempt $i -> $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "daily-challenge endpoint did not return 200"
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true

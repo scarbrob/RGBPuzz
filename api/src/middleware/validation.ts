@@ -2,7 +2,7 @@
  * Input validation and sanitization middleware
  */
 
-import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../../shared/src/constants';
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS, LAUNCH_DATE } from '../../../shared/src/constants';
 
 export interface ValidationError {
   field: string;
@@ -81,6 +81,19 @@ export function validateDate(date: string): ValidationError | null {
 
   if (parsed.toISOString().slice(0, 10) !== date) {
     return { field: 'date', message: 'invalid date' };
+  }
+
+  // Bound the range. Format-only validation let anyone pull an arbitrary
+  // future puzzle (`?date=2027-01-01`), which makes a "daily" challenge
+  // farmable a year ahead. Compare as strings: YYYY-MM-DD sorts
+  // lexicographically, and both ends are already normalized UTC dates.
+  if (date < LAUNCH_DATE) {
+    return { field: 'date', message: `date must be on or after ${LAUNCH_DATE}` };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (date > today) {
+    return { field: 'date', message: 'date must not be in the future' };
   }
 
   return null;

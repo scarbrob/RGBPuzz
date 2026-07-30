@@ -65,16 +65,21 @@ param dailyChallengeSalt string = ''
 Name of the EXISTING App Service plan hosting the Function App. The plan is
 referenced rather than created: pointing the app at a newly created plan is an
 app migration, not a no-op, and orphans the original.
+
+No default: the live name is environment-specific and this repo is public.
+Supplied by CI from the AZURE_HOSTING_PLAN_NAME secret.
 ''')
-param hostingPlanName string = 'ASP-rgbpuzzrg-813c'
+param hostingPlanName string
 
 @description('''
 Name of the EXISTING blob container holding the deployed function package.
 Azure appends a random suffix at creation time, so this cannot be derived and
 must be supplied verbatim -- getting it wrong repoints the app away from its
 own deployed code.
+
+No default: supplied by CI from the AZURE_DEPLOYMENT_CONTAINER_NAME secret.
 ''')
-param deploymentContainerName string = 'app-package-rgbpuzz-api-7d670a0'
+param deploymentContainerName string
 
 @description('''
 Enable HTTP/2 on the Function App. Live is currently false; flipping it is a
@@ -93,11 +98,14 @@ instead, which creates the secret in the same deployment.
 param saltSecretExists bool = false
 
 @description('''
-Log Analytics workspace backing Application Insights. Defaults to the workspace
-the component is already attached to -- repointing it is a data migration that
-splits historical telemetry, so it must be an explicit choice.
+Resource id of the Log Analytics workspace backing Application Insights.
+Repointing it is a data migration that splits historical telemetry, so it must
+be an explicit choice.
+
+No default: a full ARM id embeds the subscription id, and this repo is public.
+Supplied by CI from the AZURE_LOG_ANALYTICS_WORKSPACE_ID secret.
 ''')
-param logAnalyticsWorkspaceId string = '/subscriptions/12b2f854-eba5-4514-81d9-3bae9edf787b/resourceGroups/DefaultResourceGroup-EUS2/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-12b2f854-eba5-4514-81d9-3bae9edf787b-EUS2'
+param logAnalyticsWorkspaceId string
 
 @description('Telemetry retention in days. Must match live to avoid silently shortening history.')
 param appInsightsRetentionDays int = 90

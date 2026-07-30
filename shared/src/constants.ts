@@ -55,6 +55,14 @@ export const DAILY_CHALLENGE_CONFIG = {
   maxAttempts: 5,
 } as const;
 
+/**
+ * First date a daily challenge exists for (YYYY-MM-DD, UTC).
+ * Requests outside [LAUNCH_DATE, today] are rejected: without this bound the
+ * API happily generates every future puzzle on demand, which defeats the whole
+ * point of a *daily* challenge.
+ */
+export const LAUNCH_DATE = '2025-11-24';
+
 // ==================== SPECTRUM MODE ====================
 
 /**

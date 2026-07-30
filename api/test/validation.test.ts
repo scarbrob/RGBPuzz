@@ -6,7 +6,7 @@ import {
   validateDate,
   validateTokenIds,
 } from '../src/middleware/validation';
-import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../shared/src/constants';
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS, LAUNCH_DATE } from '../../shared/src/constants';
 
 const tok = (n: number) => n.toString(16).padStart(16, '0');
 const tokens = (n: number) => Array.from({ length: n }, (_, i) => tok(i));
@@ -93,10 +93,19 @@ describe('validateSpectrumLevel', () => {
 });
 
 describe('validateDate', () => {
-  it('accepts well-formed dates', () => {
-    for (const d of ['2026-01-01', '2026-12-31', '2024-02-29']) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  it('accepts well-formed dates inside the playable range', () => {
+    for (const d of [LAUNCH_DATE, '2026-01-01', today]) {
       expect(validateDate(d), d).toBeNull();
     }
+  });
+
+  it('treats a real leap day as calendar-valid, rejecting it only on range', () => {
+    // 2024-02-29 is a genuine date but predates launch. The message proves the
+    // calendar check passed and the range check is what rejected it -- if this
+    // ever says 'invalid date', the leap-year handling has regressed.
+    expect(validateDate('2024-02-29')!.message).toContain(LAUNCH_DATE);
   });
 
   it('rejects malformed shapes', () => {
@@ -116,6 +125,24 @@ describe('validateDate', () => {
     for (const d of ['2026-13-01', '2026-00-10', '2026-02-30']) {
       expect(validateDate(d), d).not.toBeNull();
     }
+  });
+
+  it('rejects dates before launch', () => {
+    // Without a lower bound the API generates puzzles for dates that never
+    // had one, polluting stats and share strings.
+    const beforeLaunch = new Date(Date.parse(`${LAUNCH_DATE}T00:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 10);
+    expect(validateDate(beforeLaunch)!.message).toContain(LAUNCH_DATE);
+    expect(validateDate('2020-01-01')).not.toBeNull();
+  });
+
+  it('rejects future dates', () => {
+    // The core anti-farming guard: a *daily* challenge must not be pullable
+    // ahead of time.
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    expect(validateDate(tomorrow)!.message).toContain('future');
+    expect(validateDate('2099-12-31')).not.toBeNull();
   });
 });
 

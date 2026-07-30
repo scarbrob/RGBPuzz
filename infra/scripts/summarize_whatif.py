@@ -15,10 +15,14 @@ import argparse
 import json
 import sys
 
-# Change types that destroy or recreate a resource. Deploying these against
-# production silently drops data or takes an endpoint offline, so CI refuses
-# them and requires a human to run the apply job explicitly.
-DESTRUCTIVE = {"Delete", "Deploy"}
+# Change types that actually destroy a resource. Only `Delete` qualifies:
+# ARM's `Deploy` means "will be deployed, effect undeterminable" -- it shows up
+# routinely for resources what-if cannot fully evaluate (existing refs, Key
+# Vault, list*() expressions), so failing on it would red-flag every PR.
+DESTRUCTIVE = {"Delete"}
+
+# Worth calling out in the summary but not worth blocking on.
+NEEDS_REVIEW = {"Deploy"}
 
 ICONS = {
     "Create": "🟢",
@@ -59,6 +63,13 @@ def render(changes: list[dict]) -> str:
     summary = ", ".join(f"{n} {t.lower()}" for t, n in sorted(counts.items()))
     lines.append(f"**{len(interesting)} change(s):** {summary}")
     lines.append("")
+
+    if any(c["changeType"] in NEEDS_REVIEW for c in interesting):
+        lines.append(
+            "> ⚠️ Some resources report `Deploy` -- what-if could not determine "
+            "the effect. Review those manually before applying."
+        )
+        lines.append("")
 
     for c in interesting:
         icon = ICONS.get(c["changeType"], "❔")

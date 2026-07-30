@@ -41,7 +41,7 @@ export async function validateSolution(
     let body: ValidationRequest;
     try {
       body = await request.json() as ValidationRequest;
-    } catch (parseError) {
+    } catch {
       context.log('JSON parse error');
       return addCorsHeaders({
         status: 400,

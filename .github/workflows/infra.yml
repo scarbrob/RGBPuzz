@@ -29,6 +29,9 @@ permissions:
 
 env:
   RESOURCE_GROUP: rgbpuzz-rg
+  AZURE_HOSTING_PLAN_NAME: ${{ secrets.AZURE_HOSTING_PLAN_NAME }}
+  AZURE_DEPLOYMENT_CONTAINER_NAME: ${{ secrets.AZURE_DEPLOYMENT_CONTAINER_NAME }}
+  AZURE_LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.AZURE_LOG_ANALYTICS_WORKSPACE_ID }}
 
 jobs:
   validate:
@@ -48,13 +51,26 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # The salt flag exists to stop us wiring a Key Vault reference that cannot
+      # resolve. Hardcoding it to true would make the guard decorative, so ask
+      # Key Vault directly.
+      - name: Check salt secret exists
+        id: salt
+        run: |
+          if az keyvault secret show --vault-name rgbpuzz-kv --name daily-challenge-salt --output none 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::daily-challenge-salt not found in rgbpuzz-kv; app settings will be skipped by the template."
+          fi
+
       - name: Validate template
         run: |
           az deployment group validate \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
             --parameters infra/main.bicepparam \
-            --parameters saltSecretExists=true \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
             --output none
 
       - name: What-if
@@ -65,7 +81,7 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
             --parameters infra/main.bicepparam \
-            --parameters saltSecretExists=true \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
             --result-format FullResourcePayload \
             --no-pretty-print > whatif.json
 
@@ -114,6 +130,15 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Check salt secret exists
+        id: salt
+        run: |
+          if az keyvault secret show --vault-name rgbpuzz-kv --name daily-challenge-salt --output none 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy
         run: |
           az deployment group create \
@@ -121,7 +146,7 @@ jobs:
             --name "rgbpuzz-$(date -u +%Y%m%d%H%M%S)" \
             --template-file infra/main.bicep \
             --parameters infra/main.bicepparam \
-            --parameters saltSecretExists=true \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
             --output none
 
       - name: Verify API is serving

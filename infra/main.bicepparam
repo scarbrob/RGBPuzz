@@ -18,3 +18,10 @@ param maximumInstanceCount = 100
 //   az deployment group create ... --parameters dailyChallengeSalt=<value>
 // Leaving it empty preserves whatever is already in Key Vault.
 param dailyChallengeSalt = ''
+
+// Environment-specific identifiers are NOT committed -- this repo is public and
+// a full workspace resource id embeds the subscription id. CI supplies these
+// from repository secrets; see infra/README.md for local use.
+param hostingPlanName = readEnvironmentVariable('AZURE_HOSTING_PLAN_NAME')
+param deploymentContainerName = readEnvironmentVariable('AZURE_DEPLOYMENT_CONTAINER_NAME')
+param logAnalyticsWorkspaceId = readEnvironmentVariable('AZURE_LOG_ANALYTICS_WORKSPACE_ID')

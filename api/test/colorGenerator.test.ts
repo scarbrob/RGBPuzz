@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'crypto';
 import {
   generateDailySeed,
   generateColorsFromSeed,
@@ -136,7 +137,7 @@ describe('encryptHex', () => {
     const hex = '1a2b3c';
     const token = createColorToken({ r: 26, g: 43, b: 60 }, 0, SALT);
     const enc = Buffer.from(encryptHex(hex, token), 'base64');
-    const md5 = require('crypto').createHash('md5').update(token).digest();
+    const md5 = createHash('md5').update(token).digest();
     const dec = Buffer.from(enc.map((b, i) => b ^ md5[i % md5.length]));
     expect(dec.toString('hex')).toBe(hex);
   });

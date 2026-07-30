@@ -35,8 +35,16 @@ param storageAccountName string = '${baseName}funcstorage'
 @description('Name of the Key Vault holding the daily challenge salt.')
 param keyVaultName string = '${baseName}-kv'
 
-@description('Origins allowed to call the API, comma separated.')
-param allowedOrigins string = 'https://rgbpuzz.com'
+@description('''
+Origins allowed to call the API, comma separated.
+
+Must match live exactly. This value is applied to BOTH the platform CORS list
+and the ALLOWED_ORIGINS app setting, and the appsettings resource replaces the
+block wholesale -- narrowing it silently breaks every request from a dropped
+origin. `www.rgbpuzz.com` in particular is a bound custom domain serving real
+traffic.
+''')
+param allowedOrigins string = 'http://localhost:3000,https://www.rgbpuzz.com,https://rgbpuzz.com,https://white-pebble-06934e70f.3.azurestaticapps.net,https://portal.azure.com'
 
 @description('''
 GitHub repository linked to the Static Web App. Omitting these unlinks the SWA

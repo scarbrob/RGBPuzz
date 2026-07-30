@@ -48,16 +48,24 @@ jobs:
           npm ci --prefix api
           npm run build --prefix api
 
+      - name: Lint API
+        run: npm run lint --prefix api
+
       - name: Unit tests (gate deploy on green)
         run: npm test --prefix api
 
       - name: Prune to production dependencies
         run: npm prune --omit=dev --prefix api
 
+      # OIDC federated credentials, matching infra.yml. The previous
+      # long-lived AZURE_CREDENTIALS service principal secret is no longer
+      # used -- id-token: write above was already requested but unused.
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1

@@ -11,16 +11,31 @@ export async function currentOrder(page: Page): Promise<string[]> {
  * dnd-kit announces drag progress into an aria-live region, e.g.
  * "Draggable item <id> was moved over droppable area <id>."
  * That announcement updates on every accepted arrow key, whereas the DOM
- * order only commits on drop — so it's our reliable mid-drag signal.
+ * order only commits on drop - so it's our reliable mid-drag signal.
+ *
+ * Two subtleties, both of which produced a real flake:
+ *
+ * 1. dnd-kit renders more than one live region, and a STALE announcement from
+ *    an earlier hop can still be sitting in one of them. Joining them all and
+ *    taking the FIRST regex match therefore returned a previous target - a
+ *    plausible-looking but wrong token id, which is why the failure showed two
+ *    real ids rather than a timeout on empty text. Take the LAST match, which
+ *    is always the most recent announcement.
+ * 2. Scope to dnd-kit's own region (`id^="DndLiveRegion"`) so unrelated app
+ *    status text cannot be misread, falling back to the generic selector if
+ *    that id scheme ever changes.
  */
 async function dragTarget(page: Page): Promise<string | null> {
-  const text = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('[role="status"],[aria-live]'))
-      .map((e) => e.textContent ?? '')
-      .join(' '),
-  );
-  const m = text.match(/moved over droppable area ([a-f0-9]+)\./);
-  return m ? m[1] : null;
+  const text = await page.evaluate(() => {
+    const dnd = Array.from(document.querySelectorAll('[id^="DndLiveRegion"]'));
+    const regions = dnd.length
+      ? dnd
+      : Array.from(document.querySelectorAll('[role="status"],[aria-live]'));
+    return regions.map((e) => e.textContent ?? '').join(' ');
+  });
+
+  const matches = [...text.matchAll(/moved over droppable area ([a-f0-9]+)\./g)];
+  return matches.length ? matches[matches.length - 1][1] : null;
 }
 
 /**

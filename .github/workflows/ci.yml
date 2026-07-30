@@ -43,11 +43,20 @@ jobs:
       - name: Build shared
         run: npm run build --prefix shared
 
+      - name: Lint shared
+        run: npm run lint --prefix shared
+
       - name: Typecheck & build API
         run: npm run build --prefix api
 
+      - name: Lint API
+        run: npm run lint --prefix api
+
       - name: Lint frontend
         run: npm run lint --prefix frontend
+
+      - name: Unit tests (frontend)
+        run: npm test --prefix frontend
 
       - name: Build frontend
         env:
@@ -62,7 +71,7 @@ jobs:
           retention-days: 7
 
   unit:
-    name: Unit tests (API)
+    name: Unit tests (shared + API)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +90,10 @@ jobs:
           npm ci --prefix shared
           npm ci --prefix api
 
-      - name: Run unit tests
+      - name: Run shared unit tests
+        run: npm test --prefix shared
+
+      - name: Run API unit tests
         run: npm test --prefix api
 
   e2e:
@@ -149,16 +161,22 @@ jobs:
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Audit (high+)
+      # Fails on critical only. Dependabot (.github/dependabot.yml) handles the
+      # steady stream of high-severity transitive advisories; blocking every PR
+      # on those trains people to ignore the job, which is worse than not having
+      # it. `continue-on-error` was doing exactly that -- the job could never
+      # fail, so it reported nothing.
+      - name: Audit (critical)
         run: |
+          failed=0
           for d in shared api frontend; do
             echo "::group::npm audit $d"
-            npm audit --prefix "$d" --audit-level=high || echo "audit findings in $d"
+            npm audit --prefix "$d" --audit-level=critical || failed=1
             echo "::endgroup::"
           done
+          exit $failed

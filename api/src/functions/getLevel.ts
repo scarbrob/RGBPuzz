@@ -15,8 +15,12 @@ export async function getLevel(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   // Handle CORS preflight
+  // Echo the caller's own origin. A single joined allowlist string is not a
+  // valid Access-Control-Allow-Origin value, so every response needs this.
+  const origin = request.headers.get('origin');
+
   if (request.method === 'OPTIONS') {
-    return handleCorsPreflightOptions();
+    return handleCorsPreflightOptions(origin);
   }
 
   try {
@@ -24,14 +28,14 @@ export async function getLevel(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getLevel);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
+      return addCorsHeaders(origin, createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
     }
 
     const difficulty = request.query?.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
     const levelStr = request.query?.get('level');
     
     if (!difficulty || !levelStr) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: 'Difficulty and level required' },
       });
@@ -40,7 +44,7 @@ export async function getLevel(
     // Validate difficulty
     const difficultyError = validateDifficulty(difficulty);
     if (difficultyError) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: difficultyError.message, field: difficultyError.field },
       });
@@ -51,7 +55,7 @@ export async function getLevel(
     // Validate level
     const levelError = validateLevel(level);
     if (levelError) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: levelError.message, field: levelError.field },
       });
@@ -73,7 +77,7 @@ export async function getLevel(
     // Deterministic shuffle based on difficulty and level
     const shuffled = deterministicShuffle(colorTokens, `${difficulty}-${level}`);
     
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 200,
       jsonBody: {
         difficulty,
@@ -84,7 +88,7 @@ export async function getLevel(
     });
   } catch (error) {
     context.error('Error fetching level:', error);
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 500,
       jsonBody: { error: 'Internal server error' },
     });

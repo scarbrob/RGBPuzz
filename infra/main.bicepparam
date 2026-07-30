@@ -6,7 +6,10 @@ param functionAppName = 'rgbpuzz-api'
 param staticWebAppName = 'rgbpuzz-web'
 param storageAccountName = 'rgbpuzzfuncstorage'
 param keyVaultName = 'rgbpuzz-kv'
-param allowedOrigins = 'https://rgbpuzz.com'
+// Mirrors the live CORS list exactly. Verified against
+// `az functionapp cors show -g rgbpuzz-rg -n rgbpuzz-api`.
+// Dropping an entry breaks that origin the moment this is applied.
+param allowedOrigins = 'http://localhost:3000,https://www.rgbpuzz.com,https://rgbpuzz.com,https://white-pebble-06934e70f.3.azurestaticapps.net,https://portal.azure.com'
 param staticWebAppDomains = [
   'rgbpuzz.com'
   'www.rgbpuzz.com'

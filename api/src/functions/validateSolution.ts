@@ -23,8 +23,12 @@ export async function validateSolution(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   // Handle CORS preflight
+  // Echo the caller's own origin. A single joined allowlist string is not a
+  // valid Access-Control-Allow-Origin value, so every response needs this.
+  const origin = request.headers.get('origin');
+
   if (request.method === 'OPTIONS') {
-    return handleCorsPreflightOptions();
+    return handleCorsPreflightOptions(origin);
   }
   
   try {
@@ -33,7 +37,7 @@ export async function validateSolution(
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.validateSolution);
     
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.validateSolution.maxRequests));
+      return addCorsHeaders(origin, createRateLimitResponse(rateLimitResult, rateLimitConfigs.validateSolution.maxRequests));
     }
     
     context.log('Validate solution called');
@@ -43,7 +47,7 @@ export async function validateSolution(
       body = await request.json() as ValidationRequest;
     } catch {
       context.log('JSON parse error');
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: 'Invalid JSON in request body' },
       });
@@ -54,7 +58,7 @@ export async function validateSolution(
     // Validate token IDs
     const tokenError = validateTokenIds(orderedTokenIds);
     if (tokenError) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: tokenError.message, field: tokenError.field },
       });
@@ -67,7 +71,7 @@ export async function validateSolution(
     // Generate colors based on mode
     if (mode === 'level' || mode === 'spectrum') {
       if (!difficulty || !level) {
-        return addCorsHeaders({
+        return addCorsHeaders(origin, {
           status: 400,
           jsonBody: { error: 'Difficulty and level required for level/spectrum mode' },
         });
@@ -75,7 +79,7 @@ export async function validateSolution(
       
       const difficultyError = validateDifficulty(difficulty);
       if (difficultyError) {
-        return addCorsHeaders({
+        return addCorsHeaders(origin, {
           status: 400,
           jsonBody: { error: difficultyError.message, field: difficultyError.field },
         });
@@ -83,7 +87,7 @@ export async function validateSolution(
       
       const levelError = mode === 'spectrum' ? validateSpectrumLevel(level) : validateLevel(level);
       if (levelError) {
-        return addCorsHeaders({
+        return addCorsHeaders(origin, {
           status: 400,
           jsonBody: { error: levelError.message, field: levelError.field },
         });
@@ -104,7 +108,7 @@ export async function validateSolution(
       if (body.date || queryDate) {
         const dateError = validateDate(date);
         if (dateError) {
-          return addCorsHeaders({
+          return addCorsHeaders(origin, {
             status: 400,
             jsonBody: { error: dateError.message, field: dateError.field },
           });
@@ -136,7 +140,7 @@ export async function validateSolution(
     
     // Check if all hashes are valid
     if (submittedIndices.some(idx => idx === undefined)) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: 'Invalid color tokens' },
       });
@@ -158,7 +162,7 @@ export async function validateSolution(
       .map((idx, position) => correctOrder[position] === idx ? position : -1)
       .filter(position => position !== -1);
     
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 200,
       jsonBody: {
         correct,
@@ -169,7 +173,7 @@ export async function validateSolution(
     });
   } catch (error) {
     context.error('Error validating solution:', error);
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 500,
       jsonBody: { error: 'Internal server error' },
     });

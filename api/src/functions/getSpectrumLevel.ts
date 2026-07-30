@@ -1,9 +1,8 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateSpectrumLevelColors, createColorToken, deterministicShuffle, encryptHex } from '../utils/colorGenerator';
-import { validateDifficulty } from '../middleware/validation';
+import { validateDifficulty, validateSpectrumLevel } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
-import { SPECTRUM_LEVELS_PER_DIFFICULTY } from '../../../shared/src/constants';
 
 /**
  * GET /api/spectrum-level?difficulty={difficulty}&level={level}
@@ -43,10 +42,11 @@ export async function getSpectrumLevel(
     }
     
     const level = parseInt(levelStr);
-    if (isNaN(level) || level < 1 || level > SPECTRUM_LEVELS_PER_DIFFICULTY || !Number.isInteger(level)) {
+    const levelError = validateSpectrumLevel(level);
+    if (levelError) {
       return addCorsHeaders({
         status: 400,
-        jsonBody: { error: `level must be between 1 and ${SPECTRUM_LEVELS_PER_DIFFICULTY}` },
+        jsonBody: { error: levelError.message, field: levelError.field },
       });
     }
     

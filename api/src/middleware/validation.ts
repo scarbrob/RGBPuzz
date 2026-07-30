@@ -2,7 +2,7 @@
  * Input validation and sanitization middleware
  */
 
-import { LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../../shared/src/constants';
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../../shared/src/constants';
 
 export interface ValidationError {
   field: string;
@@ -25,15 +25,15 @@ export function validateDifficulty(difficulty: string): ValidationError | null {
 }
 
 /**
- * Validate level number
+ * Validate level number against an arbitrary upper bound.
  */
-export function validateLevel(level: number): ValidationError | null {
+function validateLevelInRange(level: number, max: number): ValidationError | null {
   if (typeof level !== 'number' || isNaN(level)) {
     return { field: 'level', message: 'level must be a number' };
   }
 
-  if (level < 1 || level > LEVELS_PER_DIFFICULTY) {
-    return { field: 'level', message: `level must be between 1 and ${LEVELS_PER_DIFFICULTY}` };
+  if (level < 1 || level > max) {
+    return { field: 'level', message: `level must be between 1 and ${max}` };
   }
 
   if (!Number.isInteger(level)) {
@@ -41,6 +41,21 @@ export function validateLevel(level: number): ValidationError | null {
   }
 
   return null;
+}
+
+/**
+ * Validate an RGB level number.
+ */
+export function validateLevel(level: number): ValidationError | null {
+  return validateLevelInRange(level, LEVELS_PER_DIFFICULTY);
+}
+
+/**
+ * Validate a spectrum level number. Spectrum has its own level count, so it
+ * gets its own bound rather than borrowing the RGB one.
+ */
+export function validateSpectrumLevel(level: number): ValidationError | null {
+  return validateLevelInRange(level, SPECTRUM_LEVELS_PER_DIFFICULTY);
 }
 
 /**

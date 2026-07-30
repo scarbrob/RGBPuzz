@@ -1,6 +1,6 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateDailySeed, generateColorsFromSeed, generateLevelColors, generateSpectrumLevelColors, generateSpectrumDailyColors, createColorToken, rgbToValue, hueToValue } from '../utils/colorGenerator';
-import { validateTokenIds, validateDifficulty, validateLevel, validateDate } from '../middleware/validation';
+import { validateTokenIds, validateDifficulty, validateLevel, validateSpectrumLevel, validateDate } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
 import { DAILY_CHALLENGE_CONFIG, SPECTRUM_DAILY_CONFIG } from '../../../shared/src/constants';
@@ -81,7 +81,7 @@ export async function validateSolution(
         });
       }
       
-      const levelError = validateLevel(level);
+      const levelError = mode === 'spectrum' ? validateSpectrumLevel(level) : validateLevel(level);
       if (levelError) {
         return addCorsHeaders({
           status: 400,

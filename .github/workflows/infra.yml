@@ -1,0 +1,140 @@
+name: Infrastructure
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply the deployment (unchecked = what-if only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  RESOURCE_GROUP: rgbpuzz-rg
+
+jobs:
+  validate:
+    name: Lint & what-if
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Bicep
+        run: az bicep build --file infra/main.bicep --stdout > /dev/null
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate template
+        run: |
+          az deployment group validate \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=true \
+            --output none
+
+      - name: What-if
+        id: whatif
+        run: |
+          set -o pipefail
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=true \
+            --result-format FullResourcePayload \
+            --no-pretty-print > whatif.json
+
+          python3 infra/scripts/summarize_whatif.py whatif.json > summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment what-if on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('summary.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const marker = '<!-- infra-whatif -->';
+            const existing = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const mine = existing.data.find((c) => c.body.includes(marker));
+            const payload = `${marker}\n${body}`;
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body: payload });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
+            }
+
+      - name: Fail on destructive changes
+        run: python3 infra/scripts/summarize_whatif.py whatif.json --fail-on-destructive
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
+
+  apply:
+    name: Apply
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && inputs.apply
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "rgbpuzz-$(date -u +%Y%m%d%H%M%S)" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=true \
+            --output none
+
+      - name: Verify API is serving
+        run: |
+          for i in $(seq 1 8); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.rgbpuzz.com/api/daily-challenge || true)
+            echo "attempt $i -> $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "api.rgbpuzz.com/api/daily-challenge did not return 200"
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true

@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   validateDifficulty,
   validateLevel,
+  validateSpectrumLevel,
   validateDate,
   validateTokenIds,
 } from '../src/middleware/validation';
-import { LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../shared/src/constants';
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../shared/src/constants';
 
 const tok = (n: number) => n.toString(16).padStart(16, '0');
 const tokens = (n: number) => Array.from({ length: n }, (_, i) => tok(i));
@@ -55,6 +56,39 @@ describe('validateLevel', () => {
 
   it('tags the offending field', () => {
     expect(validateLevel(0)!.field).toBe('level');
+  });
+});
+
+describe('validateSpectrumLevel', () => {
+  it('accepts the inclusive boundaries and mid-range', () => {
+    for (const lvl of [1, 50, SPECTRUM_LEVELS_PER_DIFFICULTY]) {
+      expect(validateSpectrumLevel(lvl), String(lvl)).toBeNull();
+    }
+  });
+
+  it('rejects out-of-range values', () => {
+    for (const lvl of [0, -1, SPECTRUM_LEVELS_PER_DIFFICULTY + 1, 1e6]) {
+      expect(validateSpectrumLevel(lvl), String(lvl)).not.toBeNull();
+    }
+  });
+
+  it('rejects non-integers, NaN, Infinity, and non-numbers', () => {
+    for (const bad of [1.5, NaN, Infinity, -Infinity, '5', null, undefined, {}]) {
+      expect(validateSpectrumLevel(bad as never), String(bad)).not.toBeNull();
+    }
+  });
+
+  it('tags the offending field', () => {
+    expect(validateSpectrumLevel(0)!.field).toBe('level');
+  });
+
+  it('uses the spectrum bound, not the RGB one', () => {
+    // Guards the drift this refactor was meant to prevent: if the two counts
+    // ever diverge, spectrum must follow its own constant.
+    expect(validateSpectrumLevel(SPECTRUM_LEVELS_PER_DIFFICULTY)).toBeNull();
+    expect(validateSpectrumLevel(SPECTRUM_LEVELS_PER_DIFFICULTY + 1)!.message).toContain(
+      String(SPECTRUM_LEVELS_PER_DIFFICULTY),
+    );
   });
 });
 

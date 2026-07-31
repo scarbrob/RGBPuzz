@@ -17,6 +17,13 @@ name: Pipeline
 on:
   push:
     branches: [main]
+  # TEMPORARY: validate this consolidated pipeline before it lands on main.
+  # workflow_dispatch cannot reach a workflow file that is not yet on the
+  # default branch, so a PR run is the only way to exercise it pre-merge.
+  # Deploy jobs are gated on github.event_name == 'push' below, so a PR run
+  # validates only -- it never touches Azure. REMOVE BEFORE MERGE.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       infra_apply:
@@ -217,6 +224,7 @@ jobs:
     # acceptable here; failed is not.
     if: |
       always() &&
+      github.event_name != 'pull_request' &&
       needs.changes.outputs.api == 'true' &&
       needs.build-test.result == 'success' &&
       (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
@@ -288,6 +296,7 @@ jobs:
     needs: [changes, build-test, e2e, deploy-api]
     if: |
       always() &&
+      github.event_name != 'pull_request' &&
       needs.changes.outputs.frontend == 'true' &&
       needs.build-test.result == 'success' &&
       needs.e2e.result == 'success' &&

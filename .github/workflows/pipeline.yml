@@ -17,6 +17,10 @@ name: Pipeline
 on:
   push:
     branches: [main]
+  # Validation runs on PRs so branch protection has something to gate on.
+  # Deploy jobs are restricted to push events below, so a PR run never ships.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       infra_apply:
@@ -26,7 +30,9 @@ on:
 
 concurrency:
   group: pipeline-${{ github.ref }}
-  cancel-in-progress: false
+  # Supersede in-flight PR runs (a rapid series of pushes to a branch otherwise
+  # burns a full run each), but never interrupt a deploy mid-flight.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -68,7 +74,13 @@ jobs:
             exit 0
           fi
 
-          before="${{ github.event.before }}"
+          # On a PR, diff against the merge base so the filter reflects the
+          # whole branch, not just the most recent push to it.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            before="${{ github.event.pull_request.base.sha }}"
+          else
+            before="${{ github.event.before }}"
+          fi
           # First push on a branch (or a force-push landing on an unknown ref)
           # reports an all-zero SHA. Fall back to the first parent.
           if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ] \
@@ -212,6 +224,32 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
+  # Dependency audit. Carried over from the old ci.yml.
+  # ---------------------------------------------------------------------------
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Fails on critical only. Dependabot (.github/dependabot.yml) handles the
+      # steady stream of high-severity transitive advisories; blocking every PR
+      # on those trains people to ignore the job, which is worse than not having
+      # it. `continue-on-error` was doing exactly that -- the job could never
+      # fail, so it reported nothing.
+      - name: Audit (critical)
+        run: |
+          failed=0
+          for d in shared api frontend; do
+            echo "::group::npm audit $d"
+            npm audit --prefix "$d" --audit-level=critical || failed=1
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  # ---------------------------------------------------------------------------
   # Deploy API. Gated on build-test + e2e.
   # ---------------------------------------------------------------------------
   deploy-api:
@@ -222,6 +260,7 @@ jobs:
     # acceptable here; failed is not.
     if: |
       always() &&
+      github.event_name == 'push' &&
       needs.changes.outputs.api == 'true' &&
       needs.build-test.result == 'success' &&
       (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
@@ -293,6 +332,7 @@ jobs:
     needs: [changes, build-test, e2e, deploy-api]
     if: |
       always() &&
+      github.event_name == 'push' &&
       needs.changes.outputs.frontend == 'true' &&
       needs.build-test.result == 'success' &&
       needs.e2e.result == 'success' &&

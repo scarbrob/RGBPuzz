@@ -30,5 +30,9 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Without these, Playwright swallows the server's output and a startup
+    // failure surfaces only as an opaque "Timed out waiting 120000ms".
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

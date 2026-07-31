@@ -17,13 +17,6 @@ name: Pipeline
 on:
   push:
     branches: [main]
-  # TEMPORARY: validate this consolidated pipeline before it lands on main.
-  # workflow_dispatch cannot reach a workflow file that is not yet on the
-  # default branch, so a PR run is the only way to exercise it pre-merge.
-  # Deploy jobs are gated on github.event_name == 'push' below, so a PR run
-  # validates only -- it never touches Azure. REMOVE BEFORE MERGE.
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       infra_apply:
@@ -68,9 +61,7 @@ jobs:
         run: |
           # workflow_dispatch has no diff to inspect -- treat everything as
           # changed so a manual run is never a silent no-op.
-          # TEMPORARY: pull_request is included here to force a full validation
-          # run of this consolidated pipeline. REMOVE WITH THE PR TRIGGER.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "api=true"      >> "$GITHUB_OUTPUT"
             echo "frontend=true" >> "$GITHUB_OUTPUT"
             echo "infra=true"    >> "$GITHUB_OUTPUT"
@@ -231,7 +222,6 @@ jobs:
     # acceptable here; failed is not.
     if: |
       always() &&
-      github.event_name != 'pull_request' &&
       needs.changes.outputs.api == 'true' &&
       needs.build-test.result == 'success' &&
       (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
@@ -303,7 +293,6 @@ jobs:
     needs: [changes, build-test, e2e, deploy-api]
     if: |
       always() &&
-      github.event_name != 'pull_request' &&
       needs.changes.outputs.frontend == 'true' &&
       needs.build-test.result == 'success' &&
       needs.e2e.result == 'success' &&

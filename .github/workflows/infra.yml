@@ -1,11 +1,6 @@
 name: Infrastructure
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'infra/**'
-      - '.github/workflows/infra.yml'
   push:
     branches: [main]
     paths:
@@ -25,7 +20,6 @@ concurrency:
 permissions:
   contents: read
   id-token: write
-  pull-requests: write
 
 env:
   RESOURCE_GROUP: rgbpuzz-rg
@@ -87,25 +81,6 @@ jobs:
 
           python3 infra/scripts/summarize_whatif.py whatif.json > summary.md
           cat summary.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Comment what-if on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('summary.md', 'utf8');
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const marker = '<!-- infra-whatif -->';
-            const existing = await github.rest.issues.listComments({ owner, repo, issue_number });
-            const mine = existing.data.find((c) => c.body.includes(marker));
-            const payload = `${marker}\n${body}`;
-            if (mine) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body: payload });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
-            }
 
       - name: Fail on destructive changes
         run: python3 infra/scripts/summarize_whatif.py whatif.json --fail-on-destructive

@@ -362,18 +362,19 @@ describe('generateSpectrumDailyColors', () => {
 
   it('clusters colors within the requested hue arc (wrap-aware)', () => {
     const hues = generateSpectrumDailyColors(seed, 5, 60).map((c) => rgbToHsl(c).h);
-    const spread = Math.max(...hues.map((a) => Math.min(...hues.map((b) => {
+
+    const wrapDistance = (a: number, b: number) => {
       const raw = Math.abs(a - b);
       return Math.min(raw, 360 - raw);
-    }).map(() => 0))), 0);
-    // Pairwise wrap-aware distance must never exceed the arc (plus rounding slack).
-    for (const a of hues) {
-      for (const b of hues) {
-        const raw = Math.abs(a - b);
-        expect(Math.min(raw, 360 - raw)).toBeLessThanOrEqual(60 + 2);
-      }
-    }
-    expect(spread).toBe(0);
+    };
+
+    // Widest pairwise wrap-aware gap must fit inside the arc (plus rounding
+    // slack). The previous version mapped this to all zeros, so `spread` was
+    // unconditionally 0 and the assertion could never fail.
+    const spread = Math.max(
+      ...hues.map((a) => Math.max(...hues.map((b) => wrapDistance(a, b)))),
+    );
+    expect(spread).toBeLessThanOrEqual(60 + 2);
   });
 
   it('differs from the RGB daily generator for the same date', () => {

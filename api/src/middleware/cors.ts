@@ -70,8 +70,11 @@ export function resolveAllowOrigin(origin?: string | null): string | undefined {
   if (allowedOrigins.includes('*')) return '*';
 
   // No Origin header: same-origin, curl, or a server-side caller. Nothing to
-  // echo, so advertise the canonical site rather than the whole list.
-  if (!origin) return allowedOrigins[0];
+  // echo, so advertise the canonical site. Deliberately NOT allowedOrigins[0]:
+  // the allowlist is ordered for convenience, not precedence, and production
+  // currently lists http://localhost:3000 first -- which would tell a
+  // no-Origin caller that localhost is the allowed origin.
+  if (!origin) return DEFAULT_ORIGIN;
 
   return isOriginAllowed(origin) ? origin : undefined;
 }
@@ -105,13 +108,19 @@ export function handleCorsPreflightOptions(origin?: string | null) {
  * previous signature made it easy to forget -- only 6 of ~30 call sites passed
  * it, so most responses silently advertised the wrong origin. Putting it first
  * makes an omission a compile error.
+ *
+ * The response's own headers are spread FIRST so the computed CORS headers win.
+ * The other order let any call site override the validated
+ * `Access-Control-Allow-Origin`/`Vary` and reintroduce the bug this module
+ * exists to prevent. Unrelated headers (Retry-After, X-RateLimit-*) are
+ * untouched.
  */
 export function addCorsHeaders(origin: string | null | undefined, response: any) {
   return {
     ...response,
     headers: {
-      ...buildCorsHeaders(origin),
       ...(response.headers || {}),
+      ...buildCorsHeaders(origin),
     },
   };
 }

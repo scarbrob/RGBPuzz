@@ -135,8 +135,11 @@ describe('resolveAllowOrigin', () => {
   });
 
   it('advertises the canonical origin when no Origin header is sent', () => {
+    // Not allowedOrigins[0]: the LIVE list starts with http://localhost:3000,
+    // so returning the first entry told production no-Origin callers that
+    // localhost was the allowed origin.
     withOrigins(LIVE, () => {
-      expect(resolveAllowOrigin(null)).toBe('http://localhost:3000');
+      expect(resolveAllowOrigin(null)).toBe('https://rgbpuzz.com');
     });
     withOrigins('https://rgbpuzz.com,https://www.rgbpuzz.com', () => {
       expect(resolveAllowOrigin(null)).toBe('https://rgbpuzz.com');
@@ -172,6 +175,21 @@ describe('addCorsHeaders', () => {
       expect(res.headers['Retry-After']).toBe('30');
       expect(res.headers['Access-Control-Allow-Origin']).toBe('https://www.rgbpuzz.com');
       expect(res.jsonBody).toEqual({ error: 'slow down' });
+    });
+  });
+
+  it('does not let a caller override the validated CORS headers', () => {
+    withOrigins(LIVE, () => {
+      const res = addCorsHeaders('https://www.rgbpuzz.com', {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': 'https://evil.example.com',
+          Vary: 'Accept-Encoding',
+        },
+        jsonBody: {},
+      });
+      expect(res.headers['Access-Control-Allow-Origin']).toBe('https://www.rgbpuzz.com');
+      expect(res.headers.Vary).toBe('Origin');
     });
   });
 

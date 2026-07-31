@@ -106,10 +106,9 @@ All three environment variables must point at the new subscription's resources, 
 - **The "Failure Anomalies" smart detector alert and its action group.**
   Application Insights creates these implicitly; what-if reports them as `Ignore`.
 
-## Known gap: auth is inconsistent across workflows
+## Workflow auth
 
-`infra.yml` uses OIDC federated credentials (`AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID`).
+All Azure access uses OIDC federated credentials (`AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID`).
+The long-lived `AZURE_CREDENTIALS` service principal secret is no longer used by any workflow.
 
-`azure-functions.yml` still uses a long-lived service principal secret (`AZURE_CREDENTIALS`) while also requesting `id-token: write` that it never uses.
-Those should converge on OIDC.
-Until then the federated credential must be registered on the app registration for this repo, or `infra.yml` will fail to log in.
+The federated credential must be registered on the app registration for this repo, or the pipeline will fail to log in.

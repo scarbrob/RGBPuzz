@@ -63,7 +63,9 @@ jobs:
         run: |
           # workflow_dispatch has no diff to inspect -- treat everything as
           # changed so a manual run is never a silent no-op.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # TEMPORARY: pull_request is included here to force a full validation
+          # run of this consolidated pipeline. REMOVE WITH THE PR TRIGGER.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "api=true"      >> "$GITHUB_OUTPUT"
             echo "frontend=true" >> "$GITHUB_OUTPUT"
             echo "infra=true"    >> "$GITHUB_OUTPUT"

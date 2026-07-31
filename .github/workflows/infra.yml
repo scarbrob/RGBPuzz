@@ -82,7 +82,7 @@ jobs:
             --template-file infra/main.bicep \
             --parameters infra/main.bicepparam \
             --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
-            --result-format FullResourcePayload \
+            --result-format FullResourcePayloads \
             --no-pretty-print > whatif.json
 
           python3 infra/scripts/summarize_whatif.py whatif.json > summary.md

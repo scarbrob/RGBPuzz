@@ -8,34 +8,72 @@ export async function currentOrder(page: Page): Promise<string[]> {
 }
 
 /**
- * dnd-kit announces drag progress into an aria-live region, e.g.
- * "Draggable item <id> was moved over droppable area <id>."
- * That announcement updates on every accepted arrow key, whereas the DOM
- * order only commits on drop - so it's our reliable mid-drag signal.
+ * dnd-kit renders exactly ONE live region (@dnd-kit/accessibility `LiveRegion`,
+ * a `role="status" aria-atomic` node) and REPLACES its text on every drag
+ * event. Measured, not assumed: `[role="status"],[aria-live]` has length 1
+ * throughout a drag.
  *
- * Two subtleties, both of which produced a real flake:
+ * Observed sequence for lift-at-2, ArrowLeft, ArrowLeft, drop:
+ *   lift  -> "Draggable item A was moved over droppable area A."  (over itself)
+ *   arrow -> "Draggable item A was moved over droppable area B."
+ *   arrow -> "Draggable item A was moved over droppable area C."
+ *   drop  -> "Draggable item A was dropped over droppable area C"
  *
- * 1. dnd-kit renders more than one live region, and a STALE announcement from
- *    an earlier hop can still be sitting in one of them. Joining them all and
- *    taking the FIRST regex match therefore returned a previous target - a
- *    plausible-looking but wrong token id, which is why the failure showed two
- *    real ids rather than a timeout on empty text. Take the LAST match, which
- *    is always the most recent announcement.
- * 2. Scope to dnd-kit's own region (`id^="DndLiveRegion"`) so unrelated app
- *    status text cannot be misread, falling back to the generic selector if
- *    that id scheme ever changes.
+ * Two consequences that matter for the helpers below:
+ *  - On lift the reported target is the dragged item ITSELF, not a neighbour.
+ *  - The DOM order does NOT change until drop, so this announcement is the
+ *    only usable mid-drag signal.
  */
 async function dragTarget(page: Page): Promise<string | null> {
-  const text = await page.evaluate(() => {
-    const dnd = Array.from(document.querySelectorAll('[id^="DndLiveRegion"]'));
-    const regions = dnd.length
-      ? dnd
-      : Array.from(document.querySelectorAll('[role="status"],[aria-live]'));
-    return regions.map((e) => e.textContent ?? '').join(' ');
-  });
+  const text = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[role="status"],[aria-live]'))
+      .map((e) => e.textContent ?? '')
+      .join(' '),
+  );
+  const m = text.match(/moved over droppable area ([a-f0-9]+)\./);
+  return m ? m[1] : null;
+}
 
-  const matches = [...text.matchAll(/moved over droppable area ([a-f0-9]+)\./g)];
-  return matches.length ? matches[matches.length - 1][1] : null;
+/**
+ * Press `key` until the live region reports the drag sitting over `expected`.
+ *
+ * dnd-kit debounces arrow keys behind its ~250ms sort transition and SILENTLY
+ * DROPS any press that lands while a transition is in flight. Pressing once and
+ * then polling is therefore unsound: if that single press is swallowed, the
+ * awaited state can never arrive, so the poll burns its whole timeout and then
+ * fails reporting the PREVIOUS hop's id. That was the flake -- roughly one test
+ * per full run, moving between specs.
+ *
+ * Polling harder cannot recover a lost keypress. Re-pressing can.
+ */
+async function pressUntilTargetIs(
+  page: Page,
+  key: 'ArrowLeft' | 'ArrowRight',
+  expected: string,
+): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  let presses = 0;
+
+  while (Date.now() < deadline) {
+    if ((await dragTarget(page)) === expected) return;
+
+    await page.keyboard.press(key);
+    presses++;
+
+    // Short wait: long enough for the sort transition to settle and re-announce,
+    // short enough that a swallowed press is retried promptly.
+    try {
+      await expect.poll(() => dragTarget(page), { timeout: 1_000 }).toBe(expected);
+      return;
+    } catch {
+      // Press was swallowed mid-transition; loop and send another.
+    }
+  }
+
+  throw new Error(
+    `drag never reached ${expected} after ${presses} "${key}" press(es); ` +
+      `live region reports ${await dragTarget(page)}`,
+  );
 }
 
 /**
@@ -43,10 +81,6 @@ async function dragTarget(page: Page): Promise<string | null> {
  * focus, Space to lift, Arrows to shift, Space to drop.
  * Exercises the real drag pipeline (and the a11y path) instead of poking
  * React state directly.
- *
- * dnd-kit debounces arrow keys behind its ~250ms sort transition, so we wait
- * for each step to be acknowledged before sending the next one. Blind presses
- * get silently swallowed and the tile lands short of its target.
  */
 export async function moveTile(page: Page, from: number, to: number): Promise<void> {
   if (from === to) return;
@@ -56,18 +90,17 @@ export async function moveTile(page: Page, from: number, to: number): Promise<vo
 
   await tiles(page).nth(from).focus();
   await page.keyboard.press('Space');
+
+  // On lift, dnd-kit reports the item as being over itself.
   await expect.poll(() => dragTarget(page), { timeout: 5_000 }).toBe(id);
 
   const key = to > from ? 'ArrowRight' : 'ArrowLeft';
   const step = to > from ? 1 : -1;
 
+  // The DOM does not reorder until drop, so each hop target comes from the
+  // order captured before the lift.
   for (let pos = from; pos !== to; pos += step) {
-    const expected = order[pos + step];
-    await page.keyboard.press(key);
-    // Wait until dnd-kit acknowledges the hop before pressing again.
-    await expect
-      .poll(() => dragTarget(page), { timeout: 5_000 })
-      .toBe(expected);
+    await pressUntilTargetIs(page, key, order[pos + step]);
   }
 
   await page.keyboard.press('Space');

@@ -40,6 +40,11 @@ permissions:
 
 env:
   NODE_VERSION: '22.x'
+  # api has azure-functions-core-tools as a devDependency purely for the local
+  # `func start` script. Its postinstall downloads a ~200MB CLI zip from the
+  # Azure CDN, which CI never uses and which fails the whole run when that CDN
+  # hiccups (seen: AggregateError fetching Azure.Functions.Cli.linux-x64).
+  AZURE_FUNCTIONS_CORE_TOOLS_SKIP_DOWNLOAD: 'true'
 
 jobs:
   # ---------------------------------------------------------------------------

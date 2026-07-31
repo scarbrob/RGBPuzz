@@ -26,7 +26,11 @@ export default defineConfig({
 
   // Serve the production build so E2E exercises what actually ships.
   webServer: {
-    command: `npm run preview -- --port ${PORT} --strictPort`,
+    // Bind explicitly to 127.0.0.1. `vite preview` otherwise binds to
+    // `localhost`, which on GitHub runners resolves to ::1 (IPv6) first while
+    // the `url` below polls IPv4 -- the server comes up fine and Playwright
+    // still times out waiting for it.
+    command: `npm run preview -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

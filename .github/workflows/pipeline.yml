@@ -1,0 +1,492 @@
+name: Pipeline
+
+# One pipeline for validate -> deploy, replacing the previous four workflows
+# (ci, azure-functions, azure-static-web-apps, infra).
+#
+# Why one file: the old split re-ran the same work in several places. The
+# Playwright suite ran twice per push (ci + SWA deploy) and the API unit tests
+# ran twice (ci + functions deploy), because a deploy workflow cannot see
+# another workflow's result and so had to re-prove the build itself. Jobs in a
+# single workflow can use `needs:`, so each suite now runs exactly once and the
+# deploys consume that verdict.
+#
+# It also buys ordering. The old deploys fired independently on merge, so the
+# frontend could land before the API it depends on. deploy-web now waits for
+# deploy-api.
+
+on:
+  push:
+    branches: [main]
+  # Validation runs on PRs so branch protection has something to gate on.
+  # Deploy jobs are restricted to push events below, so a PR run never ships.
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      infra_apply:
+        description: 'Apply the Bicep deployment (unchecked = what-if only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  # Supersede in-flight PR runs (a rapid series of pushes to a branch otherwise
+  # burns a full run each), but never interrupt a deploy mid-flight.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22.x'
+  # api has azure-functions-core-tools as a devDependency purely for the local
+  # `func start` script. Its postinstall downloads a ~200MB CLI zip from the
+  # Azure CDN, which CI never uses and which fails the whole run when that CDN
+  # hiccups (seen: AggregateError fetching Azure.Functions.Cli.linux-x64).
+  AZURE_FUNCTIONS_CORE_TOOLS_SKIP_DOWNLOAD: 'true'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # What changed? Replaces the per-workflow `paths:` filters, which are not
+  # available per-job.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Filter paths
+        id: filter
+        run: |
+          # workflow_dispatch has no diff to inspect -- treat everything as
+          # changed so a manual run is never a silent no-op.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "api=true"      >> "$GITHUB_OUTPUT"
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "infra=true"    >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # On a PR, diff against the merge base so the filter reflects the
+          # whole branch, not just the most recent push to it.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            before="${{ github.event.pull_request.base.sha }}"
+          else
+            before="${{ github.event.before }}"
+          fi
+          # First push on a branch (or a force-push landing on an unknown ref)
+          # reports an all-zero SHA. Fall back to the first parent.
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+            before=$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)
+          fi
+
+          changed=$(git diff --name-only "$before" "${{ github.sha }}")
+          echo "--- changed files ---"; echo "$changed"
+
+          match() { echo "$changed" | grep -qE "$1"; }
+
+          # shared/ feeds both api and frontend, so it dirties both.
+          match '^(api|shared)/'      && echo "api=true"      >> "$GITHUB_OUTPUT" || echo "api=false"      >> "$GITHUB_OUTPUT"
+          match '^(frontend|shared)/' && echo "frontend=true" >> "$GITHUB_OUTPUT" || echo "frontend=false" >> "$GITHUB_OUTPUT"
+          match '^infra/'             && echo "infra=true"    >> "$GITHUB_OUTPUT" || echo "infra=false"    >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # Build, lint, unit test. Runs once; both deploys gate on it.
+  # ---------------------------------------------------------------------------
+  build-test:
+    name: Build, lint & unit tests
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            shared/package-lock.json
+            api/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefix shared
+          npm ci --prefix api
+          npm ci --prefix frontend
+
+      - name: Build shared
+        run: npm run build --prefix shared
+
+      - name: Lint
+        run: |
+          npm run lint --prefix shared
+          npm run lint --prefix api
+          npm run lint --prefix frontend
+
+      - name: Typecheck & build API
+        run: npm run build --prefix api
+
+      - name: Unit tests
+        run: |
+          npm test --prefix shared
+          npm test --prefix api
+          npm test --prefix frontend
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: https://api.rgbpuzz.com/api
+        run: npm run build --prefix frontend
+
+      # Handed to deploy-web so the deploy ships exactly the bytes that were
+      # tested, rather than rebuilding and hoping they match.
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # E2E. Runs once, against the same production build the deploy will ship.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E (Playwright)
+    needs: [changes, build-test]
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            shared/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefix shared
+          npm ci --prefix frontend
+
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          v=$(node -p "require('./frontend/node_modules/@playwright/test/package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Install system deps (cached browser path)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+        working-directory: frontend
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Run E2E tests
+        run: npm run test:e2e -- --project=chromium
+        working-directory: frontend
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Dependency audit. Carried over from the old ci.yml.
+  # ---------------------------------------------------------------------------
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Fails on critical only. Dependabot (.github/dependabot.yml) handles the
+      # steady stream of high-severity transitive advisories; blocking every PR
+      # on those trains people to ignore the job, which is worse than not having
+      # it. `continue-on-error` was doing exactly that -- the job could never
+      # fail, so it reported nothing.
+      - name: Audit (critical)
+        run: |
+          failed=0
+          for d in shared api frontend; do
+            echo "::group::npm audit $d"
+            npm audit --prefix "$d" --audit-level=critical || failed=1
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  # ---------------------------------------------------------------------------
+  # Deploy API. Gated on build-test + e2e.
+  # ---------------------------------------------------------------------------
+  deploy-api:
+    name: Deploy API
+    needs: [changes, build-test, e2e]
+    # `always()` + explicit result checks: e2e is skipped on an API-only change,
+    # and a skipped dependency would otherwise skip this job too. Skipped is
+    # acceptable here; failed is not.
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.changes.outputs.api == 'true' &&
+      needs.build-test.result == 'success' &&
+      (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            shared/package-lock.json
+            api/package-lock.json
+
+      # Rebuilt rather than downloaded: the Functions package needs a pruned
+      # production node_modules tree alongside dist, which does not survive an
+      # artifact round-trip cleanly. Tests are not re-run -- build-test owns that.
+      - name: Install & build
+        run: |
+          npm ci --prefix shared
+          npm run build --prefix shared
+          npm ci --prefix api
+          npm run build --prefix api
+
+      - name: Prune to production dependencies
+        run: npm prune --omit=dev --prefix api
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: rgbpuzz-api
+          package: api
+
+      - name: Smoke test
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://rgbpuzz-api.azurewebsites.net/api/daily-challenge" || true)
+            echo "attempt $i -> $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "daily-challenge endpoint did not return 200"
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
+
+  # ---------------------------------------------------------------------------
+  # Deploy web. Waits for deploy-api so the client never lands ahead of the API
+  # it talks to. `always()` + explicit result check lets this still run when
+  # deploy-api is skipped (frontend-only change) but not when it failed.
+  # ---------------------------------------------------------------------------
+  deploy-web:
+    name: Deploy web
+    needs: [changes, build-test, e2e, deploy-api]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.changes.outputs.frontend == 'true' &&
+      needs.build-test.result == 'success' &&
+      needs.e2e.result == 'success' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /frontend/dist
+          api_location: ''
+          output_location: ''
+          skip_app_build: true
+
+  # ---------------------------------------------------------------------------
+  # Infra. Validate + what-if on any infra change; apply stays behind an
+  # explicit manual dispatch flag.
+  # ---------------------------------------------------------------------------
+  infra-validate:
+    name: Infra lint & what-if
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RESOURCE_GROUP: rgbpuzz-rg
+      AZURE_HOSTING_PLAN_NAME: ${{ secrets.AZURE_HOSTING_PLAN_NAME }}
+      AZURE_DEPLOYMENT_CONTAINER_NAME: ${{ secrets.AZURE_DEPLOYMENT_CONTAINER_NAME }}
+      AZURE_LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.AZURE_LOG_ANALYTICS_WORKSPACE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Bicep
+        run: az bicep build --file infra/main.bicep --stdout > /dev/null
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # The salt flag exists to stop us wiring a Key Vault reference that cannot
+      # resolve. Hardcoding it to true would make the guard decorative, so ask
+      # Key Vault directly.
+      - name: Check salt secret exists
+        id: salt
+        run: |
+          if az keyvault secret show --vault-name rgbpuzz-kv --name daily-challenge-salt --output none 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::daily-challenge-salt not found in rgbpuzz-kv; app settings will be skipped by the template."
+          fi
+
+      - name: Validate template
+        run: |
+          az deployment group validate \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
+            --output none
+
+      - name: What-if
+        run: |
+          set -o pipefail
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
+            --result-format FullResourcePayloads \
+            --no-pretty-print > whatif.json
+
+          python3 infra/scripts/summarize_whatif.py whatif.json > summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on destructive changes
+        run: python3 infra/scripts/summarize_whatif.py whatif.json --fail-on-destructive
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
+
+  infra-apply:
+    name: Infra apply
+    needs: infra-validate
+    if: github.event_name == 'workflow_dispatch' && inputs.infra_apply
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RESOURCE_GROUP: rgbpuzz-rg
+      AZURE_HOSTING_PLAN_NAME: ${{ secrets.AZURE_HOSTING_PLAN_NAME }}
+      AZURE_DEPLOYMENT_CONTAINER_NAME: ${{ secrets.AZURE_DEPLOYMENT_CONTAINER_NAME }}
+      AZURE_LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.AZURE_LOG_ANALYTICS_WORKSPACE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Check salt secret exists
+        id: salt
+        run: |
+          if az keyvault secret show --vault-name rgbpuzz-kv --name daily-challenge-salt --output none 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "rgbpuzz-$(date -u +%Y%m%d%H%M%S)" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --parameters saltSecretExists=${{ steps.salt.outputs.exists }} \
+            --output none
+
+      - name: Verify API is serving
+        run: |
+          for i in $(seq 1 8); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.rgbpuzz.com/api/daily-challenge || true)
+            echo "attempt $i -> $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "api.rgbpuzz.com/api/daily-challenge did not return 200"
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true

@@ -14,15 +14,19 @@ export async function getSpectrumDaily(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Echo the caller's own origin. A single joined allowlist string is not a
+  // valid Access-Control-Allow-Origin value, so every response needs this.
+  const origin = request.headers.get('origin');
+
   if (request.method === 'OPTIONS') {
-    return handleCorsPreflightOptions();
+    return handleCorsPreflightOptions(origin);
   }
 
   try {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.dailyChallenge);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.dailyChallenge.maxRequests));
+      return addCorsHeaders(origin, createRateLimitResponse(rateLimitResult, rateLimitConfigs.dailyChallenge.maxRequests));
     }
 
     const queryDate = request.query?.get('date');
@@ -31,7 +35,7 @@ export async function getSpectrumDaily(
     if (queryDate) {
       const dateError = validateDate(queryDate);
       if (dateError) {
-        return addCorsHeaders({
+        return addCorsHeaders(origin, {
           status: 400,
           jsonBody: { error: dateError.message, field: dateError.field },
         });
@@ -61,7 +65,7 @@ export async function getSpectrumDaily(
     
     const shuffled = deterministicShuffle(colorTokens, seed);
     
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 200,
       jsonBody: {
         date: today,
@@ -72,7 +76,7 @@ export async function getSpectrumDaily(
     });
   } catch (error) {
     context.error('Error generating spectrum daily:', error);
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 500,
       jsonBody: { error: 'Internal server error' },
     });

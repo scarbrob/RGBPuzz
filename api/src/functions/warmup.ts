@@ -12,8 +12,8 @@ import { InvocationContext, Timer } from '@azure/functions';
  *   - It bypasses any future caching layer
  *   - The infrastructure warmth is already handled by minimumElasticInstanceCount
  *
- * Instead we just require() the compiled function modules. This is enough to
- * keep V8 from evicting them and keep require.cache populated.
+ * Instead we just import the compiled function modules. This is enough to
+ * keep V8 from evicting them and keep the module cache populated.
  */
 export async function warmup(timer: Timer, context: InvocationContext): Promise<void> {
   if (timer.isPastDue) {
@@ -21,12 +21,14 @@ export async function warmup(timer: Timer, context: InvocationContext): Promise<
   }
 
   try {
-    // Re-touch sibling compiled modules to keep them hot in require.cache
-    require('./dailyChallenge');
-    require('./spectrumDaily');
-    require('./getLevel');
-    require('./getSpectrumLevel');
-    require('./validateSolution');
+    // Re-touch sibling compiled modules to keep them hot in the module cache.
+    await Promise.all([
+      import('./dailyChallenge'),
+      import('./spectrumDaily'),
+      import('./getLevel'),
+      import('./getSpectrumLevel'),
+      import('./validateSolution'),
+    ]);
     context.log('Warmup: modules touched');
   } catch (err) {
     context.log(`Warmup: module touch failed: ${(err as Error).message}`);

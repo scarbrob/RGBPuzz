@@ -47,3 +47,8 @@ publish-profile.xml
 
 # Screenshots (dev only)
 screenshots/
+# Playwright
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/blob-report/
+/frontend/playwright/.cache/

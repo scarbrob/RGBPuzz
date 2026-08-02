@@ -1,9 +1,8 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { generateSpectrumLevelColors, createColorToken, deterministicShuffle, encryptHex } from '../utils/colorGenerator';
-import { validateDifficulty } from '../middleware/validation';
+import { validateDifficulty, validateSpectrumLevel } from '../middleware/validation';
 import { checkRateLimit, rateLimitConfigs, getClientIdentifier, createRateLimitResponse } from '../middleware/rateLimit';
 import { addCorsHeaders, handleCorsPreflightOptions } from '../middleware/cors';
-import { SPECTRUM_LEVELS_PER_DIFFICULTY } from '../../../shared/src/constants';
 
 /**
  * GET /api/spectrum-level?difficulty={difficulty}&level={level}
@@ -13,22 +12,26 @@ export async function getSpectrumLevel(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Echo the caller's own origin. A single joined allowlist string is not a
+  // valid Access-Control-Allow-Origin value, so every response needs this.
+  const origin = request.headers.get('origin');
+
   if (request.method === 'OPTIONS') {
-    return handleCorsPreflightOptions();
+    return handleCorsPreflightOptions(origin);
   }
 
   try {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.getLevel);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
+      return addCorsHeaders(origin, createRateLimitResponse(rateLimitResult, rateLimitConfigs.getLevel.maxRequests));
     }
 
     const difficulty = request.query?.get('difficulty') as 'easy' | 'medium' | 'hard' | 'insane';
     const levelStr = request.query?.get('level');
     
     if (!difficulty || !levelStr) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: 'Difficulty and level required' },
       });
@@ -36,17 +39,18 @@ export async function getSpectrumLevel(
     
     const difficultyError = validateDifficulty(difficulty);
     if (difficultyError) {
-      return addCorsHeaders({
+      return addCorsHeaders(origin, {
         status: 400,
         jsonBody: { error: difficultyError.message, field: difficultyError.field },
       });
     }
     
     const level = parseInt(levelStr);
-    if (isNaN(level) || level < 1 || level > SPECTRUM_LEVELS_PER_DIFFICULTY || !Number.isInteger(level)) {
-      return addCorsHeaders({
+    const levelError = validateSpectrumLevel(level);
+    if (levelError) {
+      return addCorsHeaders(origin, {
         status: 400,
-        jsonBody: { error: `level must be between 1 and ${SPECTRUM_LEVELS_PER_DIFFICULTY}` },
+        jsonBody: { error: levelError.message, field: levelError.field },
       });
     }
     
@@ -67,7 +71,7 @@ export async function getSpectrumLevel(
     
     const shuffled = deterministicShuffle(colorTokens, `spectrum-${difficulty}-${level}`);
     
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 200,
       jsonBody: {
         difficulty,
@@ -79,7 +83,7 @@ export async function getSpectrumLevel(
     });
   } catch (error) {
     context.error('Error fetching spectrum level:', error);
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 500,
       jsonBody: { error: 'Internal server error' },
     });

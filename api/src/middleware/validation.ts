@@ -2,7 +2,7 @@
  * Input validation and sanitization middleware
  */
 
-import { LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS } from '../../../shared/src/constants';
+import { LEVELS_PER_DIFFICULTY, SPECTRUM_LEVELS_PER_DIFFICULTY, DIFFICULTY_LEVELS, LAUNCH_DATE } from '../../../shared/src/constants';
 
 export interface ValidationError {
   field: string;
@@ -25,15 +25,15 @@ export function validateDifficulty(difficulty: string): ValidationError | null {
 }
 
 /**
- * Validate level number
+ * Validate level number against an arbitrary upper bound.
  */
-export function validateLevel(level: number): ValidationError | null {
+function validateLevelInRange(level: number, max: number): ValidationError | null {
   if (typeof level !== 'number' || isNaN(level)) {
     return { field: 'level', message: 'level must be a number' };
   }
 
-  if (level < 1 || level > LEVELS_PER_DIFFICULTY) {
-    return { field: 'level', message: `level must be between 1 and ${LEVELS_PER_DIFFICULTY}` };
+  if (level < 1 || level > max) {
+    return { field: 'level', message: `level must be between 1 and ${max}` };
   }
 
   if (!Number.isInteger(level)) {
@@ -41,6 +41,21 @@ export function validateLevel(level: number): ValidationError | null {
   }
 
   return null;
+}
+
+/**
+ * Validate an RGB level number.
+ */
+export function validateLevel(level: number): ValidationError | null {
+  return validateLevelInRange(level, LEVELS_PER_DIFFICULTY);
+}
+
+/**
+ * Validate a spectrum level number. Spectrum has its own level count, so it
+ * gets its own bound rather than borrowing the RGB one.
+ */
+export function validateSpectrumLevel(level: number): ValidationError | null {
+  return validateLevelInRange(level, SPECTRUM_LEVELS_PER_DIFFICULTY);
 }
 
 /**
@@ -56,10 +71,29 @@ export function validateDate(date: string): ValidationError | null {
     return { field: 'date', message: 'date must be in YYYY-MM-DD format' };
   }
 
-  // Validate it's a real date
-  const parsed = new Date(date);
+  // Validate it's a real date.
+  // Note: `new Date('2026-02-30')` does NOT throw — JS rolls it over to Mar 2.
+  // Round-trip through toISOString to reject rolled-over calendar dates.
+  const parsed = new Date(`${date}T00:00:00Z`);
   if (isNaN(parsed.getTime())) {
     return { field: 'date', message: 'invalid date' };
+  }
+
+  if (parsed.toISOString().slice(0, 10) !== date) {
+    return { field: 'date', message: 'invalid date' };
+  }
+
+  // Bound the range. Format-only validation let anyone pull an arbitrary
+  // future puzzle (`?date=2027-01-01`), which makes a "daily" challenge
+  // farmable a year ahead. Compare as strings: YYYY-MM-DD sorts
+  // lexicographically, and both ends are already normalized UTC dates.
+  if (date < LAUNCH_DATE) {
+    return { field: 'date', message: `date must be on or after ${LAUNCH_DATE}` };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (date > today) {
+    return { field: 'date', message: 'date must not be in the future' };
   }
 
   return null;

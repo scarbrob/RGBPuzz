@@ -12,5 +12,11 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  test: {
+    environment: 'node',
+    // Playwright owns e2e/. Without this, `vitest` tries to run those specs and
+    // fails on the missing Playwright test runner.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   }
 })

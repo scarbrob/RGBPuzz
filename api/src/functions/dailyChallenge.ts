@@ -17,8 +17,12 @@ export async function getDailyChallenge(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   // Handle CORS preflight
+  // Echo the caller's own origin. A single joined allowlist string is not a
+  // valid Access-Control-Allow-Origin value, so every response needs this.
+  const origin = request.headers.get('origin');
+
   if (request.method === 'OPTIONS') {
-    return handleCorsPreflightOptions();
+    return handleCorsPreflightOptions(origin);
   }
 
   try {
@@ -26,7 +30,7 @@ export async function getDailyChallenge(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(clientId, rateLimitConfigs.dailyChallenge);
     if (!rateLimitResult.allowed) {
-      return addCorsHeaders(createRateLimitResponse(rateLimitResult, rateLimitConfigs.dailyChallenge.maxRequests));
+      return addCorsHeaders(origin, createRateLimitResponse(rateLimitResult, rateLimitConfigs.dailyChallenge.maxRequests));
     }
 
     // Get date from query param or use server's current date
@@ -37,7 +41,7 @@ export async function getDailyChallenge(
     if (queryDate) {
       const dateError = validateDate(queryDate);
       if (dateError) {
-        return addCorsHeaders({
+        return addCorsHeaders(origin, {
           status: 400,
           jsonBody: { error: dateError.message, field: dateError.field },
         });
@@ -72,7 +76,7 @@ export async function getDailyChallenge(
     // but everyone gets the same shuffle for the same day
     const shuffled = deterministicShuffle(colorTokens, seed);
     
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 200,
       jsonBody: {
         date: today,
@@ -82,7 +86,7 @@ export async function getDailyChallenge(
     });
   } catch (error) {
     context.error('Error generating daily challenge:', error);
-    return addCorsHeaders({
+    return addCorsHeaders(origin, {
       status: 500,
       jsonBody: { error: 'Internal server error' },
     });

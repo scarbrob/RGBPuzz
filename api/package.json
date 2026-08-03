@@ -24,7 +24,7 @@
     "azure-functions-core-tools": "^4.12.1",
     "eslint": "^8.57.1",
     "rimraf": "^5.0.5",
-    "typescript": "^5.3.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
 }

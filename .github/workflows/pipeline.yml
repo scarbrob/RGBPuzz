@@ -162,7 +162,7 @@ jobs:
       # Handed to deploy-web so the deploy ships exactly the bytes that were
       # tested, rather than rebuilding and hoping they match.
       - name: Upload frontend build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: frontend/dist
@@ -228,7 +228,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: frontend/playwright-report

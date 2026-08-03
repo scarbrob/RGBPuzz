@@ -280,6 +280,8 @@ jobs:
     env:
       FUNCTION_APP_NAME: rgbpuzz-api
       RESOURCE_GROUP: rgbpuzz-rg
+      # The custom domain the frontend is built against.
+      API_PUBLIC_HOST: api.rgbpuzz.com
     permissions:
       contents: read
       id-token: write
@@ -321,38 +323,61 @@ jobs:
           app-name: ${{ env.FUNCTION_APP_NAME }}
           package: api
 
-      # The hostname is resolved from Azure rather than hardcoded. Azure now
-      # issues regionally-unique default hostnames
-      # (<app>-<hash>.<region>-01.azurewebsites.net), so the legacy short form
-      # <app>.azurewebsites.net does not resolve at all -- curl returns 000 and
-      # the smoke test fails even though the deploy succeeded. The hash changes
-      # if the app is ever recreated, so it must not be baked into the workflow.
+      # Resolved from Azure rather than hardcoded. Azure issues
+      # regionally-unique default hostnames now
+      # (<app>-<hash>.<region>-01.azurewebsites.net); the legacy short form
+      # <app>.azurewebsites.net has no DNS record, so curl returned 000 and the
+      # smoke test failed even though the deploy succeeded. The hash changes if
+      # the app is recreated, so it must not be baked into the workflow.
+      #
+      # `properties.defaultHostName // defaultHostName`: az CLI 2.85 nests the
+      # ARM payload under `properties`, older versions flatten it to the top
+      # level. Querying only one of the two silently yields an empty string on
+      # the other -- confirmed locally on 2.85, where the flat query returns
+      # null while `az webapp show` and `az functionapp list` still flatten.
+      # Runners upgrade the CLI on their own schedule, so accept both shapes.
       - name: Resolve Function App hostname
         id: host
         run: |
           host=$(az functionapp show \
             --name "$FUNCTION_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
-            --query defaultHostName -o tsv)
-          if [ -z "$host" ]; then
+            --query '(properties.defaultHostName // defaultHostName)' -o tsv)
+          if [ -z "$host" ] || [ "$host" = "None" ]; then
             echo "could not resolve defaultHostName for $FUNCTION_APP_NAME"
             exit 1
           fi
           echo "host=$host" >> "$GITHUB_OUTPUT"
-          echo "resolved hostname: $host"
+          echo "resolved default hostname: $host"
 
+      # Both hostnames are checked. The default hostname proves the deploy
+      # itself landed; api.rgbpuzz.com is the origin the built client actually
+      # calls (see VITE_API_BASE_URL in build-test), so it additionally proves
+      # the custom domain binding, DNS and TLS cert are intact. Checking only
+      # the Azure hostname would pass while the URL every real user hits is
+      # broken.
       - name: Smoke test
         env:
-          API_HOST: ${{ steps.host.outputs.host }}
+          DEFAULT_HOST: ${{ steps.host.outputs.host }}
+          PUBLIC_HOST: ${{ env.API_PUBLIC_HOST }}
         run: |
-          for i in 1 2 3 4 5 6; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${API_HOST}/api/daily-challenge" || true)
-            echo "attempt $i -> $code"
-            if [ "$code" = "200" ]; then exit 0; fi
-            sleep 15
-          done
-          echo "daily-challenge endpoint did not return 200"
-          exit 1
+          probe() {
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "https://$1/api/daily-challenge" || true)
+              echo "  $1 attempt $i -> $code"
+              if [ "$code" = "200" ]; then return 0; fi
+              sleep 15
+            done
+            echo "  $1 did not return 200"
+            return 1
+          }
+
+          rc=0
+          echo "probing default hostname"
+          probe "$DEFAULT_HOST" || rc=1
+          echo "probing public hostname"
+          probe "$PUBLIC_HOST" || rc=1
+          exit "$rc"
 
       - name: Azure logout
         if: always()

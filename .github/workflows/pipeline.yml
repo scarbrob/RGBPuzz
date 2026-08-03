@@ -57,6 +57,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       frontend: ${{ steps.filter.outputs.frontend }}
       infra: ${{ steps.filter.outputs.infra }}
+      ci: ${{ steps.filter.outputs.ci }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,6 +72,7 @@ jobs:
             echo "api=true"      >> "$GITHUB_OUTPUT"
             echo "frontend=true" >> "$GITHUB_OUTPUT"
             echo "infra=true"    >> "$GITHUB_OUTPUT"
+            echo "ci=true"       >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -97,6 +99,12 @@ jobs:
           match '^(api|shared)/'      && echo "api=true"      >> "$GITHUB_OUTPUT" || echo "api=false"      >> "$GITHUB_OUTPUT"
           match '^(frontend|shared)/' && echo "frontend=true" >> "$GITHUB_OUTPUT" || echo "frontend=false" >> "$GITHUB_OUTPUT"
           match '^infra/'             && echo "infra=true"    >> "$GITHUB_OUTPUT" || echo "infra=false"    >> "$GITHUB_OUTPUT"
+          # A change to the pipeline itself is validated by the pipeline itself.
+          # Without this the workflow could not gate its own edits: a
+          # workflow-only PR matched no bucket, every downstream job skipped,
+          # and branch protection passed on a run that proved nothing. That is
+          # how a broken smoke-test hostname reached main (see PR #24).
+          match '^\.github/workflows/' && echo "ci=true"       >> "$GITHUB_OUTPUT" || echo "ci=false"       >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
   # Build, lint, unit test. Runs once; both deploys gate on it.
@@ -104,7 +112,10 @@ jobs:
   build-test:
     name: Build, lint & unit tests
     needs: changes
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.frontend == 'true'
+    if: |
+      needs.changes.outputs.api == 'true' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,7 +174,7 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: [changes, build-test]
-    if: needs.changes.outputs.frontend == 'true'
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

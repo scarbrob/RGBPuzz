@@ -330,19 +330,24 @@ jobs:
       # smoke test failed even though the deploy succeeded. The hash changes if
       # the app is recreated, so it must not be baked into the workflow.
       #
-      # `properties.defaultHostName // defaultHostName`: az CLI 2.85 nests the
+      # `properties.defaultHostName || defaultHostName`: az CLI 2.85 nests the
       # ARM payload under `properties`, older versions flatten it to the top
       # level. Querying only one of the two silently yields an empty string on
       # the other -- confirmed locally on 2.85, where the flat query returns
       # null while `az webapp show` and `az functionapp list` still flatten.
       # Runners upgrade the CLI on their own schedule, so accept both shapes.
+      #
+      # NOTE: `||` is JMESPath's or-expression. `//` is jq syntax and is NOT
+      # valid JMESPath -- az rejects it outright with
+      # "argument --query: invalid jmespath_type value" (exit 2), which is how
+      # this step failed on the first deploy that actually reached it.
       - name: Resolve Function App hostname
         id: host
         run: |
           host=$(az functionapp show \
             --name "$FUNCTION_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
-            --query '(properties.defaultHostName // defaultHostName)' -o tsv)
+            --query '(properties.defaultHostName || defaultHostName)' -o tsv)
           if [ -z "$host" ] || [ "$host" = "None" ]; then
             echo "could not resolve defaultHostName for $FUNCTION_APP_NAME"
             exit 1

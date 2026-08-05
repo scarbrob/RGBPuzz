@@ -68,7 +68,7 @@ export default function SpectrumDailyPage() {
             <span className="text-light-text-secondary dark:text-dark-text-secondary"> / {game.maxAttempts}</span>
           </div>
           <div className="text-light-text-secondary dark:text-dark-text-secondary text-xs sm:text-sm font-medium">
-            Sort by <span className="text-amber-500">hue</span> — follow the rainbow!
+            Sort by <span className="text-amber-500">hue</span> - follow the rainbow!
           </div>
         </div>
 

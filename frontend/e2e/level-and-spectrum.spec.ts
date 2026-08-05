@@ -125,7 +125,7 @@ test.describe('spectrum level play', () => {
 
     await expect(page.getByText(/✓ Solved!/)).toBeVisible({ timeout: 10_000 });
 
-    // Spectrum progress is a separate key from RGB levels — they must not share.
+    // Spectrum progress is a separate key from RGB levels - they must not share.
     await expect
       .poll(
         () =>

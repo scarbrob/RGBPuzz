@@ -72,7 +72,7 @@ export function validateDate(date: string): ValidationError | null {
   }
 
   // Validate it's a real date.
-  // Note: `new Date('2026-02-30')` does NOT throw — JS rolls it over to Mar 2.
+  // Note: `new Date('2026-02-30')` does NOT throw - JS rolls it over to Mar 2.
   // Round-trip through toISOString to reject rolled-over calendar dates.
   const parsed = new Date(`${date}T00:00:00Z`);
   if (isNaN(parsed.getTime())) {

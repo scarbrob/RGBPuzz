@@ -100,7 +100,7 @@ export const SPECTRUM_DIFFICULTY_CONFIG = {
 
 /**
  * Spectrum daily challenge config.
- * 5 colors within a ~60° hue arc — tight enough to be challenging,
+ * 5 colors within a ~60° hue arc - tight enough to be challenging,
  * wide enough that colors are visually distinct.
  */
 export const SPECTRUM_DAILY_CONFIG = {

@@ -95,7 +95,7 @@ export default function SpectrumLevelsPage() {
           🌈 Spectrum Mode
         </h1>
         <p className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary mt-2">
-          Sort colors by hue — follow the rainbow!
+          Sort colors by hue - follow the rainbow!
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default function SpectrumLevelsPage() {
               🌈 Spectrum Daily Challenge
             </h2>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-              5 similar hues, 5 attempts — new puzzle every day!
+              5 similar hues, 5 attempts - new puzzle every day!
             </p>
           </div>
           <span className="text-2xl">→</span>
@@ -184,7 +184,7 @@ export default function SpectrumLevelsPage() {
       )}
 
       <div className="mt-6 sm:mt-8 text-center text-light-text-secondary dark:text-dark-text-secondary text-sm sm:text-base">
-        <p>Sort colors by where they appear on the rainbow — red → orange → yellow → green → blue → purple!</p>
+        <p>Sort colors by where they appear on the rainbow - red → orange → yellow → green → blue → purple!</p>
         <p className="text-xs sm:text-sm mt-2">Hue gaps get tighter as you advance through levels.</p>
       </div>
     </div>

@@ -49,7 +49,7 @@ app.http('validateSolution', {
   handler: validateSolution,
 });
 
-// Timer trigger — keep function modules hot, no HTTP self-pings
+// Timer trigger - keep function modules hot, no HTTP self-pings
 app.timer('warmup', {
   schedule: '0 */10 * * * *',
   handler: warmup,

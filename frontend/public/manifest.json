@@ -1,7 +1,7 @@
 {
   "name": "RGBPuzz",
   "short_name": "RGBPuzz",
-  "description": "Sort colors by their hidden RGB values — daily puzzles, 800+ levels, spectrum mode",
+  "description": "Sort colors by their hidden RGB values - daily puzzles, 800+ levels, spectrum mode",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0b1a",

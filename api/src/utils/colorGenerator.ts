@@ -118,7 +118,7 @@ export function generateLevelColors(difficulty: 'easy' | 'medium' | 'hard' | 'in
   const colors: RGBColor[] = [];
   for (let i = 0; i < count; i++) {
     const rgbValue = Math.min(Math.floor(startValue + (spacing * i)), maxRange);
-    // Extract raw RGB components (no modulo wrap — clamp to valid range)
+    // Extract raw RGB components (no modulo wrap - clamp to valid range)
     colors.push({
       r: Math.min(Math.max(Math.floor(rgbValue / 65536), 0), 255),
       g: Math.min(Math.max(Math.floor((rgbValue % 65536) / 256), 0), 255),
@@ -218,7 +218,7 @@ export function hueToValue(color: RGBColor): number {
 }
 
 /**
- * Generate spectrum level colors — evenly spaced hues with controlled saturation/lightness.
+ * Generate spectrum level colors - evenly spaced hues with controlled saturation/lightness.
  */
 export function generateSpectrumLevelColors(difficulty: 'easy' | 'medium' | 'hard' | 'insane', level: number): RGBColor[] {
   const count = SPECTRUM_DIFFICULTY_CONFIG[difficulty].colorCount;
@@ -273,7 +273,7 @@ export function generateSpectrumDailyColors(seed: string, count: number, hueArc:
   const startHash = createHash('sha256').update(seedBuffer).update(Buffer.from('hue-start')).digest();
   const startHue = ((startHash[0] * 256 + startHash[1]) % 360);
   
-  // Saturation and lightness from seed — vivid but varied
+  // Saturation and lightness from seed - vivid but varied
   const baseSat = 65 + (startHash[2] % 25);   // 65-89%
   const baseLit = 45 + (startHash[3] % 15);   // 45-59%
   

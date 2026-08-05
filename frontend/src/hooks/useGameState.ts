@@ -65,7 +65,7 @@ export function useGameState(options: UseGameStateOptions) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [lastActiveTime, setLastActiveTime] = useState(Date.now())
 
-  // Track active time — pause when page hidden, resume when visible
+  // Track active time - pause when page hidden, resume when visible
   useEffect(() => {
     if (gameState !== 'playing') return
     const handleVisibility = () => {
@@ -93,7 +93,7 @@ export function useGameState(options: UseGameStateOptions) {
     try {
       parsed = JSON.parse(savedState) as SessionState
     } catch {
-      // Corrupted state — clear it and start fresh
+      // Corrupted state - clear it and start fresh
       sessionStorage.removeItem(sessionKey)
       return false
     }

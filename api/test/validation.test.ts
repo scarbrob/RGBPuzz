@@ -183,7 +183,7 @@ describe('validateTokenIds', () => {
     expect(validateTokenIds([tok(0), null, tok(2)])).not.toBeNull();
   });
 
-  it('rejects duplicates — the anti-cheat guard', () => {
+  it('rejects duplicates - the anti-cheat guard', () => {
     const err = validateTokenIds([tok(1), tok(1), tok(2)]);
     expect(err).not.toBeNull();
     expect(err!.message).toMatch(/duplicate/i);

@@ -146,7 +146,7 @@ export async function validateSolution(
       });
     }
     
-    // Get the correct order — use hue sorting for spectrum, RGB for everything else
+    // Get the correct order - use hue sorting for spectrum, RGB for everything else
     const sortFn = (mode === 'spectrum' || mode === 'spectrum-daily') ? hueToValue : rgbToValue;
     const correctOrder = colors
       .map((color, index) => ({ index, value: sortFn(color) }))

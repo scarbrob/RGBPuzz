@@ -74,7 +74,7 @@ export interface Fixture {
   colors: RGBColor[];
   /** Tokens in the shuffled order the API returns them. */
   colorTokens: { id: string; encrypted: string }[];
-  /** Token ids in correct sorted order — the winning answer. */
+  /** Token ids in correct sorted order - the winning answer. */
   solution: string[];
   maxAttempts: number;
 }

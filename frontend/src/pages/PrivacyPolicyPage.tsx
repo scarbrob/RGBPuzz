@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
 
-        {/* Honest disclaimer — not a legal shield, just transparency */}
+        {/* Honest disclaimer - not a legal shield, just transparency */}
         <div className="glass-card p-4 sm:p-5 mb-6 border-l-4 border-yellow-500/70 flex gap-3 items-start">
           <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
@@ -125,8 +125,8 @@ export default function PrivacyPolicyPage() {
               the Service:
             </p>
             <ul className="list-disc pl-6 text-light-text-secondary dark:text-dark-text-secondary space-y-1">
-              <li><strong>Microsoft Azure</strong> (Static Web Apps + Azure Functions) — hosting and request handling. Data may be processed in the United States.</li>
-              <li><strong>GitHub</strong> — source code hosting only; not involved in user requests.</li>
+              <li><strong>Microsoft Azure</strong> (Static Web Apps + Azure Functions) - hosting and request handling. Data may be processed in the United States.</li>
+              <li><strong>GitHub</strong> - source code hosting only; not involved in user requests.</li>
             </ul>
             <p className="text-light-text-secondary dark:text-dark-text-secondary mt-3">
               We do <strong>not</strong> use Google Analytics, Facebook Pixel,
@@ -184,7 +184,7 @@ export default function PrivacyPolicyPage() {
               described in Section 3. The Service does not require any account,
               name, email, or other identifier. If you are a parent or guardian
               and believe your child has provided personal data, contact us and
-              we will work with you to address it — though, again, we do not
+              we will work with you to address it - though, again, we do not
               ask for or store such data.
             </p>
           </section>
@@ -197,8 +197,7 @@ export default function PrivacyPolicyPage() {
               The Service is served over HTTPS. Because we store no personal
               data on our servers and require no accounts, the impact of a
               server breach would be limited to the transient request logs
-              described in Section 4. We make no other security guarantees —
-              see the Disclaimer of Warranties in our Terms of Service.
+              described in Section 4. We make no other security guarantees - see the Disclaimer of Warranties in our Terms of Service.
             </p>
           </section>
 
@@ -209,7 +208,7 @@ export default function PrivacyPolicyPage() {
             <p className="text-light-text-secondary dark:text-dark-text-secondary">
               We may update this policy. Changes will be posted on this page
               with a new "Last Updated" date. Because we don't have your email,
-              we cannot notify you directly — please check this page if the
+              we cannot notify you directly - please check this page if the
               policy matters to you.
             </p>
           </section>

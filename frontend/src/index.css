@@ -143,7 +143,7 @@ html {
 }
 
 @layer components {
-  /* Glass card — frosted glass with depth */
+  /* Glass card - frosted glass with depth */
   .glass-card {
     @apply rounded-2xl border transition-all duration-300;
     background: rgba(255, 255, 255, 0.5);

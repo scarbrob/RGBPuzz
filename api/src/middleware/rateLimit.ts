@@ -84,7 +84,7 @@ export function checkRateLimit(
  * Get client identifier from request.
  *
  * IP-only. We deliberately do NOT honor a client-supplied userId here
- * because the app has no auth — an attacker could rotate ?userId= per
+ * because the app has no auth - an attacker could rotate ?userId= per
  * request to bypass rate limiting entirely.
  */
 export function getClientIdentifier(request: any): string {

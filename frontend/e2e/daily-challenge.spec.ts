@@ -32,7 +32,7 @@ test.describe('daily challenge', () => {
     await page.goto('/daily');
     await expect(tiles(page)).toHaveCount(fixture.colorTokens.length);
 
-    // Wire format must only be {id, encrypted} — no r/g/b, no hex.
+    // Wire format must only be {id, encrypted} - no r/g/b, no hex.
     for (const token of fixture.colorTokens) {
       expect(Object.keys(token).sort()).toEqual(['encrypted', 'id']);
     }

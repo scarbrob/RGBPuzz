@@ -6,7 +6,7 @@ export default function HomePage() {
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in px-4">
-      {/* Hero Section — dramatic, color-forward */}
+      {/* Hero Section - dramatic, color-forward */}
       <div className="text-center pt-8 sm:pt-12 md:pt-16 mb-16 sm:mb-20 relative">
         {/* Floating color orbs behind title */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
@@ -62,7 +62,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Game Mode Cards — asymmetric, editorial layout */}
+      {/* Game Mode Cards - asymmetric, editorial layout */}
       <div className="grid md:grid-cols-3 gap-4 sm:gap-5 mb-16 sm:mb-20">
         <Link to="/daily" className="group glass-card p-6 sm:p-8 hover:scale-[1.02] relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full" />
@@ -73,7 +73,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-1">Daily Challenge</h2>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">New puzzle every day</p>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary leading-relaxed">
-              5 colors, 5 attempts. Same puzzle for everyone — compete with friends!
+              5 colors, 5 attempts. Same puzzle for everyone - compete with friends!
             </p>
             <div className="mt-4 text-light-accent dark:text-dark-accent text-sm font-medium group-hover:translate-x-1 transition-transform">
               Play today's puzzle →
@@ -107,7 +107,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-1">Spectrum Mode</h2>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">Sort by the rainbow</p>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary leading-relaxed">
-              Sort by hue instead of RGB. A visual challenge — follow the rainbow!
+              Sort by hue instead of RGB. A visual challenge - follow the rainbow!
             </p>
             <div className="mt-4 text-amber-500 dark:text-amber-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
               Try spectrum →
@@ -116,7 +116,7 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* How to Play — minimal, icon-forward */}
+      {/* How to Play - minimal, icon-forward */}
       <div className="glass-card p-8 sm:p-10 md:p-12 mb-16 sm:mb-20">
         <h3 className="text-2xl sm:text-3xl font-bold mb-10 text-center text-light-text-primary dark:text-dark-text-primary tracking-tight">
           How to Play
@@ -141,12 +141,12 @@ export default function HomePage() {
 
         <div className="mt-10 p-4 rounded-xl bg-gradient-to-r from-light-accent/5 via-fuchsia-500/5 to-pink-500/5 dark:from-dark-accent/5 dark:via-fuchsia-500/5 dark:to-pink-500/5 border border-light-accent/10 dark:border-dark-accent/10">
           <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary">
-            <span className="text-light-accent dark:text-dark-accent font-semibold">RGB value</span> = R×65536 + G×256 + B — a color that <em>looks</em> darker isn't always lower in value!
+            <span className="text-light-accent dark:text-dark-accent font-semibold">RGB value</span> = R×65536 + G×256 + B - a color that <em>looks</em> darker isn't always lower in value!
           </p>
         </div>
       </div>
 
-      {/* Mode Details — editorial cards */}
+      {/* Mode Details - editorial cards */}
       <div className="grid md:grid-cols-3 gap-4 sm:gap-5 mb-12">
         {[
           {

@@ -15,10 +15,10 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.65.0",
     "eslint": "^8.57.1",
     "typescript": "^5.3.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
